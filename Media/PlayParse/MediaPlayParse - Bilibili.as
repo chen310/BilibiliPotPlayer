@@ -314,7 +314,7 @@ string parseFid(string path) {
 	return fid;
 }
 
-array<dictionary> FavList(string path) {	
+array<dictionary> FavList(string path) {
 	JsonReader Reader;
 	array<dictionary> videos;
 	string fid = parseFid(path);
@@ -374,6 +374,15 @@ array<dictionary> FavList(string path) {
 	return videos;
 }
 
+int getItag(int qn) {
+	array<int> qns = {10000, 400, 250, 150, 80};
+	int idx = qns.find(qn);
+	if (idx >= 0) {
+		return idx;
+	}
+	return qn;
+}
+
 string Live(string id, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	string url = "";
 	int room_id = 0;
@@ -387,17 +396,44 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		}
 		JsonValue data = Root["data"]["room_info"];
 		MetaData["title"] = data["title"].asString();
-		MetaData["SourceUrl"] = path;	
+		MetaData["SourceUrl"] = path;
 		room_id = data["room_id"].asInt();
 	}
 	res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + qn + "&https_url_req=1&ptype=16");
 	if (Reader.parse(res, Root) && Root.isObject()) {
+		qn = Root["data"]["current_qn"].asInt();
 		if (Root["code"].asInt() != 0) {
 			return "";
 		}
 		JsonValue data = Root["data"]["durl"];
 		if (data.isArray()) {
 			url = data[0]["url"].asString();
+			JsonValue qualities = Root["data"]["quality_description"];
+			if (qualities.size() > 1 && @QualityList !is null) {
+				for (uint i = 0; i < qualities.size(); i++) {
+					int quality = qualities[i]["qn"].asInt();
+					dictionary qualityitem;
+					if (quality == qn) {
+						qualityitem["url"] = url;
+					} else {
+						string quality_res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + quality + "&https_url_req=1&ptype=16");
+						JsonValue temp;
+						if (Reader.parse(quality_res, temp) && temp.isObject()) {
+							if (temp["code"].asInt() != 0) {
+								continue;
+							}
+							JsonValue qyality_data = temp["data"]["durl"];
+							if (qyality_data.isArray()) {
+								qualityitem["url"] = qyality_data[0]["url"].asString();
+							}
+						}
+					}
+					qualityitem["quality"] = qualities[i]["desc"].asString();
+					qualityitem["qualityDetail"] = qualities[i]["desc"].asString();
+					qualityitem["itag"] = getItag(quality);
+					QualityList.insertLast(qualityitem);
+				}
+			}
 		}
 	}
 	return url;
@@ -442,7 +478,7 @@ bool PlaylistCheck(const string &in path) {
 		}
 	}
 	if (path.find("/medialist/detail/ml") >= 0) {
-		return true;	
+		return true;
 	}
 
 	return false;
@@ -451,7 +487,7 @@ bool PlaylistCheck(const string &in path) {
 array<dictionary> PlaylistParse(const string &in path) {
 	array<dictionary> result;
 
-	if (path.find("space.bilibili.com") >= 0) {		
+	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
 			return spaceVideo(path);
 		}

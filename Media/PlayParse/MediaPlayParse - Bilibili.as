@@ -234,7 +234,7 @@ string parseBVId(string url) {
 }
 
 string parseUId(string url) {
-	string uid = HostRegExpParse(url, "/([0-9]+)/");
+	string uid = HostRegExpParse(url, "/([0-9]+)");
 	return uid;
 }
 
@@ -252,7 +252,6 @@ int parseTime(string s) {
 	return t;
 }
 
-// array<dictionary> spaceVideo(string uid, int ps, string tid, int pn, string kw, string order) {
 array<dictionary> spaceVideo(string path) {
 	int ps = 50;
 	string url = "/x/space/wbi/arc/search?";
@@ -311,6 +310,9 @@ bool PlaylistCheck(const string &in path) {
 		else if (path.find("/audio") >= 0) {
 			return true;
 		}
+		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
+			return true;
+		} 
 	}
 
 	return false;
@@ -319,12 +321,15 @@ bool PlaylistCheck(const string &in path) {
 array<dictionary> PlaylistParse(const string &in path) {
 	array<dictionary> result;
 
-	if (path.find("space.bilibili.com") >= 0) {
+	if (path.find("space.bilibili.com") >= 0) {		
 		if (path.find("/video") >= 0) {
 			return spaceVideo(path);
 		}
 		else if (path.find("/audio") >= 0) {
 			
+		}
+		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
+			return spaceVideo(path);
 		}
 	}
 

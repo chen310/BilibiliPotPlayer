@@ -10,11 +10,11 @@
 
 打开 PotPlayer，按 <kbd>F5</kbd> 打开选项，点击`扩展功能`下的`媒体播放列表/项目`，再点击 `Bilibili`，然后打开账户设置，在 `Cookie` 一栏粘贴你的 Bilibili Cookie。
 
-![Login](public/login.png)
+![Login](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/login.png)
 
 点击测试按钮，如果弹出账号信息，就说明登录成功。
 
-![Test](public/test.png)
+![Test](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/test.png)
 
 ## 使用方法
 

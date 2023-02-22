@@ -22,12 +22,10 @@
 // bool PlaylistCheck(const string &in)					-> check playlist
 // array<dictionary> PlaylistParse(const string &in)	-> parse playlist
 
-// ******************** 设置开始 ********************
 
 bool debug = false;
 string cookie = "";
-
-// ******************** 设置结束 ********************
+int uid = 0;
 
 void OnInitialize() {
 	HostSetUrlHeaderHTTP("bilivideo.com", "Referer: https://www.bilibili.com\r\n");
@@ -97,9 +95,30 @@ string ServerCheck(string User, string Pass) {
 
 string ServerLogin(string User, string Pass)
 {
-	cookie = Pass;
-	if (cookie.empty()) return "cookie 为空";
+	if (Pass.empty()) return "cookie 为空";
+	handleCookie(Pass);
 	return "200 ok";
+}
+
+void handleCookie(string full_cookie) {
+	array<string> cookies = full_cookie.split(";");
+	for (uint i=0; i < cookies.length(); i++) {
+		int pos = cookies[i].find("SESSDATA");
+		if (pos >= 0) {
+			cookie = cookies[i].substr(pos);
+		}
+		if (cookies[i].find("DedeUserID=") >= 0) {
+			uid = parseInt(cookies[i].split("=")[1]);
+		}
+	}
+}
+
+void log(string item) {
+	if (!debug) {
+		return;
+	}
+	HostOpenConsole();
+	HostPrintUTF8(item);
 }
 
 void log(string item, string info) {
@@ -133,7 +152,7 @@ string post(string url, string data="") {
 	if (!cookie.empty()) {
 		Headers += "Cookie: " + cookie + "\r\n";
 	}
-	log("post", url);
+	log("request", url);
 	return HostUrlGetStringWithAPI(url, UserAgent, Headers, data, true);
 }
 
@@ -195,20 +214,23 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	array<dictionary> subtitle;
 	dictionary dic;
 	dic["name"] = title;
-	dic["url"] = "http://127.0.0.1:12345/subtitle?cid=" + cid;
+	// dic["url"] = "http://127.0.0.1:12345/subtitle?cid=" + cid;
 	subtitle.insertLast(dic);
 	MetaData["subtitle"] = subtitle;
-	log("video aid", aid);
-	log("video cid", cid);
-	log("video title", title);
-	log("video owner", owner);
-	log("video quality", quality);
-	log("video url", url);
+	log("--------------------------------------------------");
+	log("标题", title);
+	log("创建者", owner);
+	log("AID", aid);
+	log("BVID", bvid);
+	log("CID", cid);
+	log("QUALITY", quality);
+	log("URL", url);
+	log("");
 
 	return url;
 }
 
-string parse(string url, string key) {
+string parse(string url, string key, string defaultValue="") {
 	string value = HostRegExpParse(url, "\?" + key + "=([a-zA-Z0-9]+)");
 	if (!value.empty()) {
 		return value;
@@ -217,14 +239,8 @@ string parse(string url, string key) {
 	if (!value.empty()) {
 		return value;
 	}
-	return "";
-}
 
-string parse(string url, string key, string defaultValue) {
-	string value = parse(url, key);
-	if (value.empty()) {
-		value = defaultValue;
-	}
+	value = defaultValue;
 	return value;
 }
 
@@ -257,7 +273,7 @@ array<dictionary> spaceVideo(string path) {
 	string url = "/x/space/wbi/arc/search?";
 	url += "mid=" + parseUId(path);
 	url += "&ps=" + ps;
-	url += "&tid=" + parse(path, "tid" "0");
+	url += "&tid=" + parse(path, "tid", "0");
 	url += "&pn=1";
 	url += "&keyword=" + parse(path, "keyword");
 	url += "&order=" + parse(path, "order", "pubdate");
@@ -279,6 +295,77 @@ array<dictionary> spaceVideo(string path) {
 							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 							videos.insertLast(video);
 						}
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
+string parseFid(string path) {
+	string fid = parse(path, "fid");
+	if (fid.empty()) {
+		fid = parse(path, "searchFid");
+	}
+	if (fid.empty()) {
+		fid = HostRegExpParse(path, "/medialist/detail/ml([0-9]+)");
+	}
+	return fid;
+}
+
+array<dictionary> FavList(string path) {	
+	JsonReader Reader;
+	array<dictionary> videos;
+	string fid = parseFid(path);
+	log("fid", fid);
+	if (fid.empty()) {
+		string res = apiPost("/x/v3/fav/folder/created/list-all?up_mid=" + uid);
+		if (res.empty()) {
+			return videos;
+		}
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["list"];
+				if (data.isArray()) {
+					fid = "" + data[0]["id"].asInt();
+				}
+			}
+		}
+	}
+	if (fid.empty()) {
+		return videos;
+	}
+	string url = "";
+	string ftype = parse(path, "ftype");
+	// 订阅和收藏
+	if (ftype == "collect") {
+		url = "/x/space/fav/season/list?season_id=" + fid + "&pn=1&ps=20";
+	} else {
+		url = "/x/v3/fav/resource/list?media_id=" + fid + "&pn=1&ps=20";
+		url += "&keyword=" + parse(path, "keyword");
+		url += "&order=" + parse(path, "order", "mtime");
+		// url += "&type=" + parse(path, "type", "0");
+		url += "&tid=" + parse(path, "tid", "0");
+	}
+	string res = apiPost(url);
+	if (res.empty()) {
+		return videos;
+	}
+	JsonValue Root;
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() == 0) {
+			JsonValue data = Root["data"]["medias"];
+			if (data.isArray()) {
+				for (uint i = 0; i < data.size(); i++) {
+					JsonValue item = data[i];
+					if (item.isObject()) {
+						dictionary video;
+						video["title"] = item["title"].asString();
+						video["duration"] = item["duration"].asInt() * 1000;
+						video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
+						videos.insertLast(video);
 					}
 				}
 			}
@@ -310,9 +397,18 @@ bool PlaylistCheck(const string &in path) {
 		else if (path.find("/audio") >= 0) {
 			return true;
 		}
+		else if (path.find("/favlist") >= 0) {
+			return true;
+		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
 			return true;
-		} 
+		}
+		else {
+			return false;
+		}
+	}
+	if (path.find("/medialist/detail/ml") >= 0) {
+		return true;	
 	}
 
 	return false;
@@ -328,9 +424,15 @@ array<dictionary> PlaylistParse(const string &in path) {
 		else if (path.find("/audio") >= 0) {
 			
 		}
+		else if (path.find("/favlist") >= 0) {
+			return FavList(path);
+		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
 			return spaceVideo(path);
 		}
+	}
+	if (path.find("/medialist/detail/ml") >= 0) {
+		return FavList(path);
 	}
 
 	return result;

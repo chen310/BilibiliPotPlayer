@@ -374,12 +374,46 @@ array<dictionary> FavList(string path) {
 	return videos;
 }
 
+string Live(string id, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
+	string url = "";
+	int room_id = 0;
+	int qn = 10000;
+	string res = post("https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id=" + id);
+	JsonReader Reader;
+	JsonValue Root;
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return "";
+		}
+		JsonValue data = Root["data"]["room_info"];
+		MetaData["title"] = data["title"].asString();
+		MetaData["SourceUrl"] = path;	
+		room_id = data["room_id"].asInt();
+	}
+	res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + qn + "&https_url_req=1&ptype=16");
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return "";
+		}
+		JsonValue data = Root["data"]["durl"];
+		if (data.isArray()) {
+			url = data[0]["url"].asString();
+		}
+	}
+	return url;
+
+}
+
 bool PlayitemCheck(const string &in path) {
 	if (path.find("bilibili.com") < 0) {
 		return false;
 	}
 
 	if (path.find("/video/BV") >= 0) {
+		return true;
+	}
+
+	if (path.find("live.bilibili.com") >= 0) {
 		return true;
 	}
 
@@ -442,6 +476,12 @@ string PlayitemParse(const string &in path, dictionary &MetaData, array<dictiona
 	if (path.find("/video/BV") >= 0) {
 		string bvid = parseBVId(path);
 		return Video(bvid, path, MetaData, QualityList);
+	}
+	if (path.find("live.bilibili.com") >= 0) {
+		string id = HostRegExpParse(path, "live.bilibili.com/([0-9]+)");
+		if (!id.empty()) {
+			return Live(id, path, MetaData, QualityList);
+		}
 	}
 
 	return path;

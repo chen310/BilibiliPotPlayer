@@ -26,6 +26,8 @@
 bool debug = false;
 string cookie = "";
 int uid = 0;
+// 是否可选择画质
+bool enable_qualities = true;
 
 void OnInitialize() {
 	HostSetUrlHeaderHTTP("bilivideo.com", "Referer: https://www.bilibili.com\r\n");
@@ -169,7 +171,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	string url;
 	JsonReader reader;
 	JsonValue root;
-	int qn = 127;
+	int qn = 120;
 	string quality;
 
 	res = apiPost("/x/web-interface/view?bvid=" + bvid);
@@ -190,7 +192,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		}
 	}
 
-	res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&otype=json&fnval=128");
+	res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
 	if (res.empty()) {
 		return url;
 	}
@@ -200,6 +202,34 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			JsonValue urls = data["durl"];
 			if (data["durl"].isArray()) {
 				url = data["durl"][0]["url"].asString();
+				qn = root["data"]["quality"].asInt();
+				JsonValue qualities = root["data"]["accept_quality"];
+				if (enable_qualities && @QualityList !is null) {
+					for (uint i = 0; i < qualities.size(); i++) {			
+						int quality = qualities[i].asInt();
+						log("qn", quality);
+						dictionary qualityitem;
+						if (quality == qn) {
+							qualityitem["url"] = url;
+						} else {
+							string quality_res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + quality + "&fnval=128&fourk=1");
+							JsonValue temp;
+							if (reader.parse(quality_res, temp) && temp.isObject()) {
+								if (temp["code"].asInt() != 0) {
+									continue;
+								}
+								JsonValue qyality_data = temp["data"]["durl"];
+								if (qyality_data.isArray()) {
+									qualityitem["url"] = qyality_data[0]["url"].asString();
+								}
+							}
+						}
+						qualityitem["quality"] = getVideoquality(quality);
+						qualityitem["qualityDetail"] = qualityitem["quality"];
+						qualityitem["itag"] = getVideoItag(quality);
+						QualityList.insertLast(qualityitem);
+					}
+				}
 			}
 			else if (data["dash"].isObject()) {
 				if (data["dash"]["video"].isArray()) {
@@ -215,6 +245,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	dictionary dic;
 	dic["name"] = title;
 	// dic["url"] = "http://127.0.0.1:12345/subtitle?cid=" + cid;
+	dic["url"] = "https://subtitle.chen310.repl.co/subtitle?cid=" + cid;
 	subtitle.insertLast(dic);
 	MetaData["subtitle"] = subtitle;
 	log("--------------------------------------------------");
@@ -383,6 +414,25 @@ int getItag(int qn) {
 	return qn;
 }
 
+int getVideoItag(int qn) {
+	array<int> qns = {127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16, 6};
+	int idx = qns.find(qn);
+	if (idx >= 0) {
+		return idx;
+	}
+	return qn;
+}
+
+string getVideoquality(int qn) {
+	array<int> qns = {127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16, 6};
+	array<string> qualities = {"8K 超高清", "杜比视界", "HDR 真彩色", "4K 超清", "1080P60 高帧率", "1080P+ 高码率", "1080P 高清", "720P60 高帧率", "720P 高清", "480P 清晰", "360P 流畅", "240P 极速"};
+	int idx = qns.find(qn);
+	if (idx >= 0) {
+		return qualities[idx];
+	}
+	return "未知";
+}
+
 string Live(string id, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	string url = "";
 	int room_id = 0;
@@ -409,7 +459,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		if (data.isArray()) {
 			url = data[0]["url"].asString();
 			JsonValue qualities = Root["data"]["quality_description"];
-			if (qualities.size() > 1 && @QualityList !is null) {
+			if (enable_qualities && @QualityList !is null) {
 				for (uint i = 0; i < qualities.size(); i++) {
 					int quality = qualities[i]["qn"].asInt();
 					dictionary qualityitem;

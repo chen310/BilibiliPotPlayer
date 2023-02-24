@@ -405,6 +405,42 @@ array<dictionary> FavList(string path) {
 	return videos;
 }
 
+array<dictionary> followingLive(uint page) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	string url = "https://api.live.bilibili.com/xlive/web-ucenter/user/following?page=" + page + "&page_size=10";
+	string res = post(url);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() == 0) {
+			JsonValue list = Root["data"]["list"];
+			if (list.isArray()) {
+				for (uint i = 0; i < list.size(); i++) {
+					JsonValue item = list[i];
+					// 未开播
+					if (item["live_status"].asInt() == 0) {
+						return videos;
+					}
+					dictionary video;
+					video["title"] = item["uname"].asString() + " - " + item["title"].asString();
+					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
+					videos.insertLast(video);
+				}
+				if (page < Root["data"]["totalPage"].asInt()) {
+					array<dictionary> videos2 = followingLive(page+1);
+					for (uint i = 0; i < videos2.size(); i++) {
+						videos.insertLast(videos2[i]);
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
 int getItag(int qn) {
 	array<int> qns = {10000, 400, 250, 150, 80};
 	int idx = qns.find(qn);
@@ -445,7 +481,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 			return "";
 		}
 		JsonValue data = Root["data"]["room_info"];
-		MetaData["title"] = data["title"].asString();
+		MetaData["title"] = Root["data"]["anchor_info"]["base_info"]["uname"].asString() + " - " +  data["title"].asString();
 		MetaData["SourceUrl"] = path;
 		room_id = data["room_id"].asInt();
 	}
@@ -530,6 +566,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("/medialist/detail/ml") >= 0) {
 		return true;
 	}
+	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
+		return true;
+	}
 
 	return false;
 }
@@ -553,6 +592,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("/medialist/detail/ml") >= 0) {
 		return FavList(path);
+	}
+	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
+		return followingLive(1);
 	}
 
 	return result;

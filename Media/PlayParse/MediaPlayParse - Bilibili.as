@@ -475,6 +475,46 @@ array<dictionary> Ranking(uint tid) {
 	return videos;
 }
 
+array<dictionary> Recommend(uint page) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	const uint nums = 5;
+	string url ="/x/web-interface/wbi/index/top/feed/rcmd?y_num=3&fresh_type=4&feed_version=V8&fresh_idx_1h="+page+"&fetch_row="+(3*page+1)+"&fresh_idx="+page+"&brush="+page+"&homepage_ver=1&ps=12&last_y_num=4&outside_trigger=";
+	string res = apiPost(url);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue list = Root["data"]["item"];
+		if (list.isArray()) {
+			for (uint i = 0; i < list.size(); i++) {
+				JsonValue item = list[i];
+				dictionary video;
+				if (item["uri"].asString().find("live.bilibili.com") >= 0) {
+					video["title"] = "【直播】" + item["owner"]["name"].asString() + " - " + item["title"].asString();
+					video["url"] = item["uri"].asString();
+				} else {
+					video["title"] = item["title"].asString();
+					video["duration"] = item["duration"].asInt() * 1000;
+					video["url"] = item["uri"].asString();
+				}
+				videos.insertLast(video);
+			}
+		}
+	}
+	if (page < nums) {
+		array<dictionary> videos2 = Recommend(page+1);
+		for (uint i = 0; i < videos2.size(); i++) {
+			videos.insertLast(videos2[i]);
+		}
+	}
+	return videos;
+}
+
 int getItag(int qn) {
 	array<int> qns = {10000, 400, 250, 150, 80};
 	int idx = qns.find(qn);
@@ -557,7 +597,6 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		}
 	}
 	return url;
-
 }
 
 bool PlayitemCheck(const string &in path) {
@@ -603,6 +642,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return true;
 	}
+	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
+		return true;
+	}
 	if (gettid(path) > 0) {
 		return true;
 	}
@@ -633,7 +675,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return followingLive(1);
 	}
-
+	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
+		return Recommend(1);
+	}
 	uint tid = gettid(path);
 	if (tid > 0) {
 		return Ranking(tid);

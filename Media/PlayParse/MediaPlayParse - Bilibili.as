@@ -38,17 +38,14 @@ void OnInitialize() {
 string host = "https://api.bilibili.com";
 
 string GetTitle() {
-
 	return "Bilibili";
 }
 
 string GetVersion() {
-
 	return "1.3";
 }
 
 string GetDesc() {
-
 	return "https://www.bilibili.com";
 }
 
@@ -160,6 +157,18 @@ string post(string url, string data="") {
 
 string apiPost(string api, string data="") {
 	return post(host + api);
+}
+
+uint gettid(string path) {
+	array<string> urls = { '//www.bilibili.com/v/anime/serial/', '//www.bilibili.com/v/anime/finish', '//www.bilibili.com/v/anime/information/', '//www.bilibili.com/v/anime/offical/', '//www.bilibili.com/anime/', '//www.bilibili.com/movie/', '//www.bilibili.com/v/guochuang/chinese/', '//www.bilibili.com/v/guochuang/original/', '//www.bilibili.com/v/guochuang/puppetry/', '//www.bilibili.com/v/guochuang/motioncomic/', '//www.bilibili.com/v/guochuang/information/', '//www.bilibili.com/guochuang/', '//www.bilibili.com/tv/', '//www.bilibili.com/documentary/', '//www.bilibili.com/v/douga/mad/', '//www.bilibili.com/v/douga/mmd/', '//www.bilibili.com/v/douga/voice/', '//www.bilibili.com/v/douga/garage_kit/', '//www.bilibili.com/v/douga/tokusatsu/', '//www.bilibili.com/v/douga/acgntalks/', '//www.bilibili.com/v/douga/other/', '//www.bilibili.com/v/douga/', '//www.bilibili.com/v/game/stand_alone', '//www.bilibili.com/v/game/esports', '//www.bilibili.com/v/game/mobile', '//www.bilibili.com/v/game/online', '//www.bilibili.com/v/game/board', '//www.bilibili.com/v/game/gmv', '//www.bilibili.com/v/game/music', '//www.bilibili.com/v/game/mugen', '//www.bilibili.com/v/game/', '//www.bilibili.com/v/kichiku/guide', '//www.bilibili.com/v/kichiku/mad', '//www.bilibili.com/v/kichiku/manual_vocaloid', '//www.bilibili.com/v/kichiku/theatre', '//www.bilibili.com/v/kichiku/course', '//www.bilibili.com/v/kichiku/', '//www.bilibili.com/v/music/original', '//www.bilibili.com/v/music/cover', '//www.bilibili.com/v/music/perform', '//www.bilibili.com/v/music/vocaloid', '//www.bilibili.com/v/music/live', '//www.bilibili.com/v/music/mv', '//www.bilibili.com/v/music/commentary', '//www.bilibili.com/v/music/tutorial', '//www.bilibili.com/v/music/other', '//www.bilibili.com/v/music', '//www.bilibili.com/v/dance/otaku/', '//www.bilibili.com/v/dance/hiphop/', '//www.bilibili.com/v/dance/star/', '//www.bilibili.com/v/dance/china/', '//www.bilibili.com/v/dance/three_d/', '//www.bilibili.com/v/dance/demo/', '//www.bilibili.com/v/dance/', '//www.bilibili.com/v/cinephile/cinecism', '//www.bilibili.com/v/cinephile/montage', '//www.bilibili.com/v/cinephile/shortfilm', '//www.bilibili.com/v/cinephile/trailer_info', '//www.bilibili.com/v/cinephile', '//www.bilibili.com/v/ent/variety', '//www.bilibili.com/v/ent/talker', '//www.bilibili.com/v/ent/fans', '//www.bilibili.com/v/ent/celebrity', '//www.bilibili.com/v/ent/', '//www.bilibili.com/v/knowledge/science', '//www.bilibili.com/v/knowledge/social_science', '//www.bilibili.com/v/knowledge/humanity_history', '//www.bilibili.com/v/knowledge/business', '//www.bilibili.com/v/knowledge/campus', '//www.bilibili.com/v/knowlake', '//www.bilibili.com/v/life/painting', '//www.bilibili.com/v/life/daily', '//www.bilibili.com/v/life', '//www.bilibili.com/v/car/racing', '//www.bilibili.com/v/car/modifiedvehicle', '//www.bilibili.com/v/car/newenergyvehicle', '//www.bilibili.com/v/car/touringcar', '//www.bilibili.com/v/car/motorcycle', '//www.bilibili.com/v/car/strategy', '//www.bilibili.com/v/car/life', '//www.bilibili.com/v/car', '//www.bilibili.com/v/fashion/makeup', '//www.bilibili.com/v/fashion/cos', '//www.bilibili.com/v/fashion/clothing', '//www.bilibili.com/v/fashion/trend', '//www.bilibili.com/v/fashion', '//www.bilibili.com/v/sports/basketball', '//www.bilibili.com/v/sports/football', '//www.bilibili.com/v/sports/aerobics', '//www.bilibili.com/v/sports/athletic', '//www.bilibili.com/v/sports/culture', '//www.bilibili.com/v/sports/comprehensive', '//www.bilibili.com/v/sports', '//www.bilibili.com/v/animal/cat', '//www.bilibili.com/v/animal/dog', '//www.bilibili.com/v/animal/reptiles', '//www.bilibili.com/v/animal/wild_animal', '//www.bilibili.com/v/animal/second_edition', '//www.bilibili.com/v/animal/animal_composite', '//www.bilibili.com/v/animal', '//www.bilibili.com/v/life/funny', '//www.bilibili.com/v/game/stand_alone' };
+	array<uint> tids = { 33, 32, 51, 152, 13, 23, 153, 168, 169, 195, 170, 167, 11, 177, 24, 25, 47, 210, 86, 253, 27, 1, 17, 171, 172, 65, 173, 121, 136, 19, 4, 22, 26, 126, 216, 127, 119, 28, 31, 59, 30, 29, 193, 243, 244, 130, 3, 20, 198, 199, 200, 154, 156, 129, 182, 183, 85, 184, 181, 71, 241, 242, 137, 5, 201, 124, 228, 207, 208, 209, 229, 122, 36, 95, 230, 231, 232, 188, 203, 204, 205, 206, 202, 76, 212, 213, 214, 215, 211, 138, 254, 250, 251, 239, 161, 162, 21, 160, 245, 246, 246, 248, 240, 227, 176, 223, 157, 252, 158, 159, 155, 235, 249, 164, 236, 237, 238, 234, 218, 219, 222, 221, 220, 75, 217, 138, 17 };
+	// array<string> names = { '连载动画', '完结动画', '资讯', '官方延伸', '番剧', '电影', '国产动画', '国产原创相关', '布袋戏', '动态漫·广播剧', '资讯', '国创', '电视剧', '纪录片', 'MAD·AMV', 'MMD·3D', '短片·手书·配音', '手办·模玩', '特摄', '动漫杂谈', '综合', '动画', '单机游戏', '电子竞技', '手机游戏', '网络游戏', '桌游棋牌', 'GMV', '音游', 'Mugen', '游戏', '鬼畜调教', '音MAD', '人力VOCALOID', '鬼畜剧场', '教程演示', '鬼畜', '原创音乐', '翻唱', '演奏', 'VOCALOID·UTAU', '音乐现场', 'MV', '乐评盘点', '音乐教学', '音乐综合', '音乐', '宅舞', '街舞', '明星舞蹈', '中国舞', '舞蹈综合', '舞蹈教程', '舞蹈', '影视杂谈', '影视剪辑', '小剧场', '预告·资讯', '影视', '综艺', '娱乐杂谈', '粉丝创作', '明星综合', '娱乐', '科学科普', '社科·法律·心理', '人 文历史', '财经商业', '校园学习', '职业职场', '设计·创意', '野生技能协会', '知识', '数码', '软件应用', '计算机技术', '科 工机械', '科技', '热点', '环球', '社会', '综合', '资讯', '美食制作', '美食侦探', '美食测评', '田园美食', '美食记录', '美食', '搞笑', '亲子', '出行', '三农', '家居房产', '手工', '绘画', '日常', '生活', '赛车', '改装玩车', '新能源车', '房车', '摩托车', '购车攻略', '汽车生活', '汽车', '美妆护肤', '仿妆cos', '穿搭', '时尚潮流', '时尚', '篮球', '足球', '健身', ' 竞技体育', '运动文化', '运动综合', '运动', '喵星人', '汪星人', '小宠异宠', '野生动物', '动物二创', '动物综合', '动物圈', '搞笑', '单机游戏' };
+	for (uint i = 0; i < urls.size(); i++) {
+		if (path.find(urls[i]) >= 0) {
+			return tids[i];
+		}
+	}
+	return 0;
 }
 
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
@@ -280,11 +289,6 @@ string parseBVId(string url) {
 	return bvid;
 }
 
-string parseUId(string url) {
-	string uid = HostRegExpParse(url, "/([0-9]+)");
-	return uid;
-}
-
 int parseTime(string s) {
 	array<string> strs = s.split(":");
 	int t = 0;
@@ -302,7 +306,7 @@ int parseTime(string s) {
 array<dictionary> spaceVideo(string path) {
 	int ps = 50;
 	string url = "/x/space/wbi/arc/search?";
-	url += "mid=" + parseUId(path);
+	url += "mid=" + HostRegExpParse(path, "/([0-9]+)");
 	url += "&ps=" + ps;
 	url += "&tid=" + parse(path, "tid", "0");
 	url += "&pn=1";
@@ -349,9 +353,12 @@ array<dictionary> FavList(string path) {
 	JsonReader Reader;
 	array<dictionary> videos;
 	string fid = parseFid(path);
-	log("fid", fid);
 	if (fid.empty()) {
-		string res = apiPost("/x/v3/fav/folder/created/list-all?up_mid=" + uid);
+		string mid = HostRegExpParse(path, "bilibili.com/([0-9]+)");
+		if (mid.empty()) {
+			mid = "" + uid;
+		}
+		string res = apiPost("/x/v3/fav/folder/created/list-all?up_mid=" + mid);
 		if (res.empty()) {
 			return videos;
 		}
@@ -435,6 +442,33 @@ array<dictionary> followingLive(uint page) {
 						videos.insertLast(videos2[i]);
 					}
 				}
+			}
+		}
+	}
+	return videos;
+}
+
+array<dictionary> Ranking(uint tid) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	string res = apiPost("/x/web-interface/ranking/v2?rid=" + tid);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue list = Root["data"]["list"];
+		if (list.isArray()) {
+			for (uint i = 0; i < list.size(); i++) {
+				JsonValue item = list[i];
+				dictionary video;
+				video["title"] = item["title"].asString();
+				video["duration"] = item["duration"].asInt() * 1000;
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
+				videos.insertLast(video);
 			}
 		}
 	}
@@ -569,6 +603,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return true;
 	}
+	if (gettid(path) > 0) {
+		return true;
+	}
 
 	return false;
 }
@@ -595,6 +632,11 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return followingLive(1);
+	}
+
+	uint tid = gettid(path);
+	if (tid > 0) {
+		return Ranking(tid);
 	}
 
 	return result;

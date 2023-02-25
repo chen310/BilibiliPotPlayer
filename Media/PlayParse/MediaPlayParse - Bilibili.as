@@ -455,11 +455,28 @@ array<dictionary> followingLive(uint page) {
 	return videos;
 }
 
-array<dictionary> Ranking(uint tid) {
+array<dictionary> Ranking(string path) {
 	array<dictionary> videos;
+
+	array<string> names = { "全站", "国创相关", "动画", "音乐", "舞蹈", "游戏", "知识", "科技", "运动", "汽车", "生活", "美食", "动物圈", "鬼畜", "时尚", "娱乐", "影视" };
+	array<string> urls = { "www.bilibili.com/v/popular/rank/all", "www.bilibili.com/v/popular/rank/guochuang", "www.bilibili.com/v/popular/rank/douga", "www.bilibili.com/v/popular/rank/music", "www.bilibili.com/v/popular/rank/dance", "www.bilibili.com/v/popular/rank/game", "www.bilibili.com/v/popular/rank/knowledge", "www.bilibili.com/v/popular/rank/tec", "www.bilibili.com/v/popular/rank/spor", "www.bilibili.com/v/popular/rank/car", "www.bilibili.com/v/popular/rank/life", "www.bilibili.com/v/popular/rank/food", "www.bilibili.com/v/popular/rank/animal", "www.bilibili.com/v/popular/rank/kichiku", "www.bilibili.com/v/popular/rank/fashion", "www.bilibili.com/v/popular/rank/en", "www.bilibili.com/v/popular/rank/cinephile" };
+	array<uint> ids = { 0, 168, 1, 3, 129, 4, 36, 188, 234, 223, 160, 211, 217, 119, 155, 5, 181 };
+	uint pos = -1;
+	for (uint i = 0; i < urls.size(); i++) {
+		if (path.find(urls[i]) >= 0) {
+			pos = i;
+			break;
+		}
+	}
+	if (pos < 0) {
+		return videos;
+	}
+	string url;
+
 	JsonReader Reader;
 	JsonValue Root;
-	string res = apiPost("/x/web-interface/ranking/v2?rid=" + tid);
+
+	string res = apiPost(url = "/x/web-interface/ranking/v2?rid=" + ids[pos]);
 	if (res.empty()) {
 		return videos;
 	}
@@ -468,6 +485,33 @@ array<dictionary> Ranking(uint tid) {
 			return videos;
 		}
 		JsonValue list = Root["data"]["list"];
+		if (list.isArray()) {
+			for (uint i = 0; i < list.size(); i++) {
+				JsonValue item = list[i];
+				dictionary video;
+				video["title"] = item["title"].asString();
+				video["duration"] = item["duration"].asInt() * 1000;
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				videos.insertLast(video);
+			}
+		}
+	}
+	return videos;
+}
+
+array<dictionary> Dynamic(uint tid) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	string res = apiPost("/x/web-interface/dynamic/region?pn=1&ps=50&rid=" + tid);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue list = Root["data"]["archives"];
 		if (list.isArray()) {
 			for (uint i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
@@ -711,6 +755,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("bangumi/play/") >= 0) {
 		return true;
 	}
+	if (path.find("www.bilibili.com/v/popular/rank") >= 0) {
+		return true;
+	}
 	if (gettid(path) > 0) {
 		return true;
 	}
@@ -753,9 +800,12 @@ array<dictionary> PlaylistParse(const string &in path) {
 	if (path.find("bangumi/play/ss") >= 0) {
 		return Banggumi(HostRegExpParse(path, "bangumi/play/ss([0-9]+)"), "season_id");
 	}
+	if (path.find("www.bilibili.com/v/popular/rank") >= 0) {
+		return Ranking(path);
+	}
 	uint tid = gettid(path);
 	if (tid > 0) {
-		return Ranking(tid);
+		return Dynamic(tid);
 	}
 
 	return result;

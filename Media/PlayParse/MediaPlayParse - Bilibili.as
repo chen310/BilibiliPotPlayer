@@ -27,7 +27,9 @@ bool debug = false;
 string cookie = "";
 int uid = 0;
 bool enable_subtitle = true;
-string subtitle_url = "https://subtitle.chen310.repl.co/subtitle?font=" + HostUrlEncode("微软雅黑") + "&font_size=30.0&alpha=0.8&is_reduce_comments=false&cid=";
+string subtitle_host = "https://subtitle.chen310.repl.co";
+string danmaku_url = subtitle_host +  "/subtitle?font=" + HostUrlEncode("微软雅黑") + "&font_size=30.0&alpha=0.8&is_reduce_comments=false&cid=";
+string subtitle_url = subtitle_host + "/subtitle?url=";
 // 是否可选择画质
 bool enable_qualities = true;
 
@@ -200,7 +202,25 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			if (isFromList != "true") {
 				MetaData["title"] = data["title"].asString();
 			}
-			MetaData["SourceUrl"] = path;			
+			MetaData["SourceUrl"] = path;
+			if (enable_subtitle) {
+				array<dictionary> subtitle;
+				dictionary dic;
+				dic["name"] = "【弹幕】" + title;
+				dic["url"] = danmaku_url + cid;
+				subtitle.insertLast(dic);
+				JsonValue subs = root["data"]["subtitle"]["list"];
+				if (subs.isArray()) {
+					for (uint i = 0; i < subs.size(); i++) {
+						JsonValue sub = subs[i];
+						dictionary dic;
+						dic["name"] = "【字幕】" + sub["lan_doc"].asString();
+						dic["url"] = subtitle_url + sub["subtitle_url"].asString();
+						subtitle.insertLast(dic);
+					}
+				}
+				MetaData["subtitle"] = subtitle;
+			}
 		} else {
 			return url;
 		}
@@ -254,14 +274,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		} else {
 			return url;
 		}
-	}
-	if (enable_subtitle) {
-		array<dictionary> subtitle;
-		dictionary dic;
-		dic["name"] = title;
-		dic["url"] = subtitle_url + cid;
-		subtitle.insertLast(dic);
-		MetaData["subtitle"] = subtitle;
 	}
 
 	log("--------------------------------------------------");

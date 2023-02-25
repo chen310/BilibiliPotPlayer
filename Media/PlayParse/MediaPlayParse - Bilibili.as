@@ -26,6 +26,8 @@
 bool debug = false;
 string cookie = "";
 int uid = 0;
+bool enable_subtitle = true;
+string subtitle_url = "https://subtitle.chen310.repl.co/subtitle?font=" + HostUrlEncode("微软雅黑") + "&font_size=30.0&alpha=0.8&is_reduce_comments=false&cid=";
 // 是否可选择画质
 bool enable_qualities = true;
 
@@ -194,7 +196,10 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			cid = data["cid"].asInt();
 			title = data["title"].asString();
 			owner = data["owner"]["name"].asString();
-			MetaData["title"] = data["title"].asString();
+			string isFromList = parse(path, "isfromlist");
+			if (isFromList != "true") {
+				MetaData["title"] = data["title"].asString();
+			}
 			MetaData["SourceUrl"] = path;			
 		} else {
 			return url;
@@ -250,13 +255,15 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			return url;
 		}
 	}
-	array<dictionary> subtitle;
-	dictionary dic;
-	dic["name"] = title;
-	// dic["url"] = "http://127.0.0.1:12345/subtitle?cid=" + cid;
-	dic["url"] = "https://subtitle.chen310.repl.co/subtitle?cid=" + cid;
-	subtitle.insertLast(dic);
-	MetaData["subtitle"] = subtitle;
+	if (enable_subtitle) {
+		array<dictionary> subtitle;
+		dictionary dic;
+		dic["name"] = title;
+		dic["url"] = subtitle_url + cid;
+		subtitle.insertLast(dic);
+		MetaData["subtitle"] = subtitle;
+	}
+
 	log("--------------------------------------------------");
 	log("标题", title);
 	log("创建者", owner);
@@ -271,11 +278,11 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 }
 
 string parse(string url, string key, string defaultValue="") {
-	string value = HostRegExpParse(url, "\?" + key + "=([a-zA-Z0-9]+)");
+	string value = HostRegExpParse(url, "\?" + key + "=([a-zA-Z0-9%]+)");
 	if (!value.empty()) {
 		return value;
 	}
-	value = HostRegExpParse(url, "&" + key + "=([a-zA-Z0-9]+)");
+	value = HostRegExpParse(url, "&" + key + "=([a-zA-Z0-9%]+)");
 	if (!value.empty()) {
 		return value;
 	}
@@ -327,7 +334,7 @@ array<dictionary> spaceVideo(string path) {
 							dictionary video;
 							video["title"] = item["title"].asString();
 							video["duration"] = parseTime(item["length"].asString());
-							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
 							videos.insertLast(video);
 						}
 					}
@@ -402,7 +409,7 @@ array<dictionary> FavList(string path) {
 						dictionary video;
 						video["title"] = item["title"].asString();
 						video["duration"] = item["duration"].asInt() * 1000;
-						video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
+						video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
 						videos.insertLast(video);
 					}
 				}
@@ -467,7 +474,60 @@ array<dictionary> Ranking(uint tid) {
 				dictionary video;
 				video["title"] = item["title"].asString();
 				video["duration"] = item["duration"].asInt() * 1000;
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				videos.insertLast(video);
+			}
+		}
+	}
+	return videos;
+}
+
+string md2ss(string mdid) {
+	JsonReader Reader;
+	JsonValue Root;
+	string ssid = "";
+	string res = apiPost("/pgc/review/user?media_id=" + mdid);
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() == 0) {
+			ssid = Root["result"]["media"]["season_id"].asString();
+		}
+	}
+	return ssid;
+}
+
+// type: meida_id/season_id/ep_id
+array<dictionary> Banggumi(string id, string type) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	if (type == "media_id") {
+		id = md2ss(id);
+		if (id.empty()) {
+			return videos;
+		}
+		type = "season_id";
+	}
+	string url = "/pgc/view/web/season?" + type + "=" + id;
+	string res = apiPost(url);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue episodes = Root["result"]["episodes"];
+		if (episodes.isArray()) {
+			for (uint i = 0; i < episodes.size(); i++) {
+				JsonValue item = episodes[i];
+				dictionary video;
+				if (item["badge"].asString().empty()) {
+					video["title"] = item["share_copy"].asString();
+				} else {
+					video["title"] = "【" + item["badge"].asString() + "】" + item["share_copy"].asString();
+				}
+				video["duration"] = item["duration"].asInt();
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
 				videos.insertLast(video);
 			}
 		}
@@ -645,6 +705,12 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
 		return true;
 	}
+	if (path.find("bangumi/media/md") >= 0) {
+		return true;
+	}
+	if (path.find("bangumi/play/") >= 0) {
+		return true;
+	}
 	if (gettid(path) > 0) {
 		return true;
 	}
@@ -677,6 +743,15 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
 		return Recommend(1);
+	}
+	if (path.find("bangumi/media/md") >= 0) {
+		return Banggumi(HostRegExpParse(path, "bangumi/media/md([0-9]+)"), "media_id");
+	}
+	if (path.find("bangumi/play/ep") >= 0) {
+		return Banggumi(HostRegExpParse(path, "bangumi/play/ep([0-9]+)"), "ep_id");
+	}
+	if (path.find("bangumi/play/ss") >= 0) {
+		return Banggumi(HostRegExpParse(path, "bangumi/play/ss([0-9]+)"), "season_id");
 	}
 	uint tid = gettid(path);
 	if (tid > 0) {

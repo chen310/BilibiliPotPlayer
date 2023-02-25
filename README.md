@@ -16,6 +16,8 @@
 
 ![Test](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/test.png)
 
+如果 Cookie 是从浏览器上复制来的，登录成功后，到浏览器中把 Bilibili 的 Cookie 删除，再重新到浏览器上登录，不然 PotPlayer 中的 Cookie 可能会很快失效（大概吧，我也不确定）
+
 ## 使用方法
 
 将 Bilibili 视频链接拖到 PotPlayer，或者按 <kbd>ctrl</kbd> + <kbd>U</kbd> 粘贴 Bilibili 视频链接即可播放。

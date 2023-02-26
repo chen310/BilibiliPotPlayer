@@ -100,7 +100,10 @@ string ServerLogin(string User, string Pass)
 {
 	if (Pass.empty()) return "cookie 为空";
 	handleCookie(Pass);
-	return "200 ok";
+	if (cookie.empty()) {
+		return "您输入的 cookie 不可用";
+	}
+	return "cookie 设置成功";
 }
 
 void handleCookie(string full_cookie) {

@@ -178,20 +178,57 @@ uint gettid(string path) {
 	return 0;
 }
 
+// 分P
+array<dictionary> VideoPages(string path) {
+	string bvid = parseBVId(path);
+	array<dictionary> videos;
+	if (bvid.empty()) {
+		return videos;
+	}
+	string res = apiPost("/x/web-interface/view?bvid=" + bvid);
+	if (!res.empty()) {
+		JsonReader Reader;
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["pages"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						if (item.isObject()) {
+							dictionary video;
+							video["title"] = item["part"].asString();
+							video["duration"] = item["duration"].asInt() * 1000;
+							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&cid=" + item["cid"].asInt();
+							videos.insertLast(video);
+						}
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
+	log("--------------------------------------------------");
 	string res;
 	int aid;
-	int cid;
 	string title;
-	string owner;
 	string url;
 	JsonReader reader;
 	JsonValue root;
 	int defaultQn = 120;
 	int qn = defaultQn;
 	string quality;
+	string cid = parse(path, "cid");
+	bool isPart = !cid.empty();
+	if (isPart) {
+		res = apiPost("/x/player/v2?bvid=" + bvid + "&cid=" + cid);
+	} else {
+		res = apiPost("/x/web-interface/view?bvid=" + bvid);
+	}
 
-	res = apiPost("/x/web-interface/view?bvid=" + bvid);
 	if (res.empty()) {
 		return url;
 	}
@@ -200,26 +237,34 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			JsonValue data = root["data"];
 			aid = data["aid"].asInt();
 			cid = data["cid"].asInt();
-			title = data["title"].asString();
-			owner = data["owner"]["name"].asString();
-			string isFromList = parse(path, "isfromlist");
-			if (isFromList != "true") {
-				MetaData["title"] = data["title"].asString();
-			}
 			MetaData["SourceUrl"] = path;
 			if (enable_subtitle) {
 				array<dictionary> subtitle;
 				dictionary dic;
-				dic["name"] = "【弹幕】" + title;
+				if (isPart) {
+					dic["name"] = "【弹幕】";
+				} else {
+					dic["name"] = "【弹幕】" + data["title"].asString();
+					title = data["title"].asString();
+				}
 				dic["url"] = danmaku_url + cid;
 				subtitle.insertLast(dic);
-				JsonValue subs = root["data"]["subtitle"]["list"];
+				JsonValue subs;
+				if (isPart) {
+					subs = root["data"]["subtitle"]["subtitles"];
+				} else {
+					subs = root["data"]["subtitle"]["list"];
+				}
 				if (subs.isArray()) {
 					for (uint i = 0; i < subs.size(); i++) {
 						JsonValue sub = subs[i];
 						dictionary dic;
 						dic["name"] = "【字幕】" + sub["lan_doc"].asString();
-						dic["url"] = subtitle_url + sub["subtitle_url"].asString();
+						if (sub["subtitle_url"].asString().find("http") == 0) {
+							dic["url"] = subtitle_url + sub["subtitle_url"].asString();
+						} else {
+							dic["url"] = subtitle_url + "http:" + sub["subtitle_url"].asString();
+						}
 						subtitle.insertLast(dic);
 					}
 				}
@@ -248,7 +293,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						if (defaultQn > qn && quality > qn) {
 							continue;
 						}
-						log("qn", quality);
 						dictionary qualityitem;
 						if (quality == qn) {
 							qualityitem["url"] = url;
@@ -282,10 +326,9 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			return url;
 		}
 	}
-
-	log("--------------------------------------------------");
-	log("标题", title);
-	log("创建者", owner);
+	if (!isPart) {
+		log("标题", title);
+	}
 	log("AID", aid);
 	log("BVID", bvid);
 	log("CID", cid);
@@ -825,7 +868,7 @@ bool PlayitemCheck(const string &in path) {
 		return false;
 	}
 
-	if (path.find("/video/BV") >= 0) {
+	if (path.find("/video/BV") >= 0 && path.find("isfromlist") >= 0) {
 		return true;
 	}
 
@@ -842,6 +885,9 @@ bool PlayitemCheck(const string &in path) {
 bool PlaylistCheck(const string &in path) {
 	if (path.find("bilibili.com") < 0) {
 		return false;
+	}
+	if (path.find("/video/BV") >= 0 && path.find("isfromlist") < 0) {
+		return true;
 	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
@@ -894,6 +940,9 @@ bool PlaylistCheck(const string &in path) {
 array<dictionary> PlaylistParse(const string &in path) {
 	array<dictionary> result;
 
+	if (path.find("/video/BV") >= 0  && path.find("isfromlist") < 0) {
+		return VideoPages(path);
+	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
 			return spaceVideo(path);
@@ -944,7 +993,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 }
 
 string PlayitemParse(const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
-	if (path.find("/video/BV") >= 0) {
+	if (path.find("/video/BV") >= 0  && path.find("isfromlist") >= 0) {
 		string bvid = parseBVId(path);
 		return Video(bvid, path, MetaData, QualityList);
 	}

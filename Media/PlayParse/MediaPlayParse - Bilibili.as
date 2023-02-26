@@ -723,6 +723,9 @@ array<dictionary> Recommend(uint page) {
 		if (list.isArray()) {
 			for (uint i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
+				if (item["bvid"].asString().empty()) {
+					continue;
+				}
 				dictionary video;
 				if (item["uri"].asString().find("live.bilibili.com") >= 0) {
 					video["title"] = "【直播】" + item["owner"]["name"].asString() + " - " + item["title"].asString();

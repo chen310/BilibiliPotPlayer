@@ -459,7 +459,7 @@ array<dictionary> followingLive(uint page) {
 					}
 					dictionary video;
 					video["title"] = item["uname"].asString() + " - " + item["title"].asString();
-					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
+					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt() + "?isfromlist=true";
 					videos.insertLast(video);
 				}
 				if (page < Root["data"]["totalPage"].asInt()) {
@@ -598,6 +598,39 @@ array<dictionary> Banggumi(string id, string type) {
 	return videos;
 }
 
+array<dictionary> AudioList(string path) {
+	array<dictionary> audios;
+	JsonReader Reader;
+	JsonValue Root;
+	string id = HostRegExpParse(path, "www.bilibili.com/audio/am([0-9]+)");
+	if (id.empty()) {
+		return audios;
+	}
+	string url = "https://www.bilibili.com/audio/music-service-c/web/song/of-menu?pn=1&ps=100&sid=" + id;
+	string res = post(url);
+	res = HostDecompress(res);
+	if (res.empty()) {
+		return audios;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return audios;
+		}
+		JsonValue data = Root["data"]["data"];
+		if (data.isArray()) {
+			for (uint i = 0; i < data.size(); i++) {
+				JsonValue item = data[i];
+				dictionary audio;
+				audio["title"] = item["title"].asString();
+				audio["duration"] = item["duration"].asInt() * 1000;
+				audio["url"] = "https://www.bilibili.com/audio/au" + item["statistic"]["sid"].asInt() + "?isfromlist=true";
+				audios.insertLast(audio);
+			}
+		}
+	}
+	return audios;
+}
+
 array<dictionary> Recommend(uint page) {
 	array<dictionary> videos;
 	JsonReader Reader;
@@ -619,11 +652,11 @@ array<dictionary> Recommend(uint page) {
 				dictionary video;
 				if (item["uri"].asString().find("live.bilibili.com") >= 0) {
 					video["title"] = "【直播】" + item["owner"]["name"].asString() + " - " + item["title"].asString();
-					video["url"] = item["uri"].asString();
+					video["url"] = item["uri"].asString() + "?isfromlist=true";
 				} else {
 					video["title"] = item["title"].asString();
 					video["duration"] = item["duration"].asInt() * 1000;
-					video["url"] = item["uri"].asString();
+					video["url"] = item["uri"].asString() + "?isfromlist=true";
 				}
 				videos.insertLast(video);
 			}
@@ -666,6 +699,38 @@ string getVideoquality(int qn) {
 	return "未知";
 }
 
+string Audio(const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
+	string id = HostRegExpParse(path, "/audio/au([0-9]+)");
+	JsonReader Reader;
+	JsonValue Root;
+	string url;
+	string res;
+	if (parse(path, "isfromlist") != "true") {
+		res = post("https://www.bilibili.com/audio/music-service-c/web/song/info?sid=" + id);
+		res = HostDecompress(res);
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() != 0) {
+				return "";
+			}
+			JsonValue data = Root["data"];
+			MetaData["title"] = data["uname"].asString() + " - " + data["title"].asString();
+			MetaData["SourceUrl"] = path;
+		}
+	}
+	res = post("https://www.bilibili.com/audio/music-service-c/web/url?privilege=2&quality=2&sid=" + id);
+	res = HostDecompress(res);
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return "";
+		}
+		JsonValue data = Root["data"]["cdns"];
+		if (data.isArray()) {
+			return data[0].asString();
+		}
+	}
+	return url;
+}
+
 string Live(string id, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	string url = "";
 	int room_id = 0;
@@ -678,7 +743,9 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 			return "";
 		}
 		JsonValue data = Root["data"]["room_info"];
-		MetaData["title"] = Root["data"]["anchor_info"]["base_info"]["uname"].asString() + " - " +  data["title"].asString();
+		if (parse(path, "isfromlist") != "true") {
+			MetaData["title"] = Root["data"]["anchor_info"]["base_info"]["uname"].asString() + " - " +  data["title"].asString();
+		}
 		MetaData["SourceUrl"] = path;
 		room_id = data["room_id"].asInt();
 	}
@@ -734,6 +801,9 @@ bool PlayitemCheck(const string &in path) {
 	if (path.find("live.bilibili.com") >= 0) {
 		return true;
 	}
+	if (path.find("www.bilibili.com/audio/au") >= 0) {
+		return true;
+	}
 
 	return false;
 }
@@ -780,6 +850,9 @@ bool PlaylistCheck(const string &in path) {
 	if (gettid(path) > 0) {
 		return true;
 	}
+	if (path.find("www.bilibili.com/audio/am") >= 0) {
+		return true;
+	}
 
 	return false;
 }
@@ -822,6 +895,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	if (path.find("www.bilibili.com/v/popular/rank") >= 0) {
 		return Ranking(path);
 	}
+	if (path.find("www.bilibili.com/audio/am") >= 0) {
+		return AudioList(path);
+	}
 	uint tid = gettid(path);
 	if (tid > 0) {
 		return Dynamic(tid);
@@ -840,6 +916,9 @@ string PlayitemParse(const string &in path, dictionary &MetaData, array<dictiona
 		if (!id.empty()) {
 			return Live(id, path, MetaData, QualityList);
 		}
+	}
+	if (path.find("www.bilibili.com/audio/au") >= 0) {
+		return Audio(path, MetaData, QualityList);
 	}
 
 	return path;

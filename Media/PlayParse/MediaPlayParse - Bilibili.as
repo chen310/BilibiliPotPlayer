@@ -329,6 +329,37 @@ int parseTime(string s) {
 	return t;
 }
 
+array<dictionary> Channel(string path) {
+	int ps = 100;
+	string uid = HostRegExpParse(path, "/([0-9]+)");
+	string sid = parse(path, "sid");
+	string url = "/x/polymer/space/seasons_archives_list?mid=" + uid + "&season_id=" + sid + "&sort_reverse=" + parse(path, "sort_reverse", "false") + "&page_num=1&page_size=" + ps;
+	string res = apiPost(url);
+	array<dictionary> videos;
+	if (!res.empty()) {
+		JsonReader Reader;
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["archives"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						if (item.isObject()) {
+							dictionary video;
+							video["title"] = item["title"].asString();
+							video["duration"] = item["length"].asInt() * 1000;
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							videos.insertLast(video);
+						}
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
 array<dictionary> spaceVideo(string path) {
 	int ps = 50;
 	string url = "/x/space/wbi/arc/search?";
@@ -822,6 +853,9 @@ bool PlaylistCheck(const string &in path) {
 		else if (path.find("/favlist") >= 0) {
 			return true;
 		}
+		else if (path.find("/channel/collectiondetail") >= 0) {
+			return true;
+		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
 			return true;
 		}
@@ -869,6 +903,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 		}
 		else if (path.find("/favlist") >= 0) {
 			return FavList(path);
+		}
+		else if (path.find("/channel/collectiondetail") >= 0) {
+			return Channel(path);
 		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
 			return spaceVideo(path);

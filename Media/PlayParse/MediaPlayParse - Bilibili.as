@@ -184,7 +184,8 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	string url;
 	JsonReader reader;
 	JsonValue root;
-	int qn = 120;
+	int defaultQn = 120;
+	int qn = defaultQn;
 	string quality;
 
 	res = apiPost("/x/web-interface/view?bvid=" + bvid);
@@ -241,6 +242,9 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				if (enable_qualities && @QualityList !is null) {
 					for (uint i = 0; i < qualities.size(); i++) {			
 						int quality = qualities[i].asInt();
+						if (defaultQn > qn && quality > qn) {
+							continue;
+						}
 						log("qn", quality);
 						dictionary qualityitem;
 						if (quality == qn) {

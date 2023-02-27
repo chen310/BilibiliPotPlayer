@@ -575,6 +575,49 @@ array<dictionary> PopularHistory() {
 	return videos;
 }
 
+array<dictionary> PopularWeekly(string path) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	string num = parse(path, "num");
+	if (num.empty()) {
+		string res = apiPost("/x/web-interface/popular/series/list");
+		if (res.empty()) {
+			return videos;
+		}
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() != 0) {
+				return videos;
+			}
+			JsonValue list = Root["data"]["list"];
+			if (list.isArray()) {
+				num = "" + list[0]["number"].asInt();
+			}
+		}
+	}
+	string res = apiPost("/x/web-interface/popular/series/one?number=" + num);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue list = Root["data"]["list"];
+		if (list.isArray()) {
+			for (uint i = 0; i < list.size(); i++) {
+				JsonValue item = list[i];
+				dictionary video;
+				video["title"] = item["title"].asString();
+				video["duration"] = item["duration"].asInt() * 1000;
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				videos.insertLast(video);
+			}
+		}
+	}
+	return videos;
+}
+
 array<dictionary> Ranking(string path) {
 	array<dictionary> videos;
 
@@ -959,6 +1002,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("www.bilibili.com/v/popular/history") >= 0) {
 		return true;
 	}
+	if (path.find("www.bilibili.com/v/popular/weekly") >= 0) {
+		return true;
+	}
 	if (gettid(path) > 0) {
 		return true;
 	}
@@ -1015,6 +1061,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("www.bilibili.com/v/popular/history") >= 0) {
 		return PopularHistory();
+	}
+	if (path.find("www.bilibili.com/v/popular/weekly") >= 0) {
+		return PopularWeekly(path);
 	}
 	if (path.find("www.bilibili.com/audio/am") >= 0) {
 		return AudioList(path);

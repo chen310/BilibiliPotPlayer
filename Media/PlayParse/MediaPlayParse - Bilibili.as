@@ -114,7 +114,8 @@ void handleCookie(string full_cookie) {
 	for (uint i=0; i < cookies.length(); i++) {
 		int pos = cookies[i].find("SESSDATA");
 		if (pos >= 0) {
-			cookie = cookies[i].substr(pos);
+			// cookie = cookies[i].substr(pos);
+			cookie = full_cookie;
 		}
 		if (cookies[i].find("DedeUserID=") >= 0) {
 			uid = parseInt(cookies[i].split("=")[1]);

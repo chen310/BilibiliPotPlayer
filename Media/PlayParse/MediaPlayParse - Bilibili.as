@@ -37,6 +37,9 @@ void OnInitialize() {
 	HostSetUrlHeaderHTTP("bilivideo.com", "Referer: https://www.bilibili.com\r\n");
 	HostSetUrlHeaderHTTP("bilivideo.cn", "Referer: https://www.bilibili.com\r\n");
 	HostSetUrlHeaderHTTP("bilibili.com", "Referer: https://www.bilibili.com\r\n");
+	if (debug) {
+		HostOpenConsole();
+	}
 }
 
 string host = "https://api.bilibili.com";
@@ -123,32 +126,15 @@ void log(string item) {
 	if (!debug) {
 		return;
 	}
-	HostOpenConsole();
 	HostPrintUTF8(item);
 }
 
 void log(string item, string info) {
-	if (!debug) {
-		return;
-	}
-	HostOpenConsole();
-	if (item.empty()) {
-		HostPrintUTF8(info);
-	} else {
-		HostPrintUTF8(item + ": " + info);
-	}
+	log(item + ": " + info);
 }
 
 void log(string item, int info) {
-	if (!debug) {
-		return;
-	}
-	HostOpenConsole();
-	if (item.empty()) {
-		HostPrintUTF8("" + info);
-	} else {
-		HostPrintUTF8(item + ": " + info);
-	}
+	log(item + ": " + info);
 }
 
 string post(string url, string data="") {
@@ -1017,6 +1003,7 @@ bool PlaylistCheck(const string &in path) {
 }
 
 array<dictionary> PlaylistParse(const string &in path) {
+	log("Playlist path", path);
 	array<dictionary> result;
 
 	if (path.find("/video/BV") >= 0  && path.find("isfromlist") < 0) {
@@ -1077,6 +1064,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 }
 
 string PlayitemParse(const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
+	log("Playitem path", path);
 	if (path.find("/video/BV") >= 0  && path.find("isfromlist") >= 0) {
 		string bvid = parseBVId(path);
 		return Video(bvid, path, MetaData, QualityList);

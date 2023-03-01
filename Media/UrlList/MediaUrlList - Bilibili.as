@@ -213,7 +213,7 @@ array<dictionary> PopularHistory() {
 			for (uint i = 0; i < list.size(); i++) {
 				dictionary week;
 				week["title"] = list[i]["name"].asString() + " " + list[i]["subject"].asString();
-				week["url"] = "https://www.bilibili.com/v/popular/weekly/?num=" + list[i]["number"].asInt();
+				week["url"] = "https://www.bilibili.com/v/popular/weekly?num=" + list[i]["number"].asInt();
 				ret.insertLast(week);
 			}
 		}

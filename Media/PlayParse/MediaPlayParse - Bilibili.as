@@ -246,6 +246,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				} else {
 					dic["name"] = "【弹幕】" + data["title"].asString();
 					title = data["title"].asString();
+					MetaData["content"] = data["owner"]["name"].asString() + " | " + title;
 				}
 				dic["url"] = danmaku_url + cid;
 				subtitle.insertLast(dic);
@@ -288,7 +289,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				qn = root["data"]["quality"].asInt();
 				JsonValue qualities = root["data"]["accept_quality"];
 				if (enable_qualities && @QualityList !is null) {
-					for (uint i = 0; i < qualities.size(); i++) {			
+					for (uint i = 0; i < qualities.size(); i++) {
 						int quality = qualities[i].asInt();
 						if (defaultQn > qn && quality > qn) {
 							continue;
@@ -326,7 +327,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			return url;
 		}
 	}
-	if (!isPart) {
+	if (!title.empty()) {
 		log("标题", title);
 	}
 	log("AID", aid);
@@ -1026,7 +1027,6 @@ array<dictionary> PlaylistParse(const string &in path) {
 			return spaceVideo(path);
 		}
 		else if (path.find("/audio") >= 0) {
-			
 		}
 		else if (path.find("/favlist") >= 0) {
 			return FavList(path);

@@ -328,11 +328,11 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 }
 
 string parse(string url, string key, string defaultValue="") {
-	string value = HostRegExpParse(url, "\?" + key + "=([a-zA-Z0-9%]+)");
+	string value = HostRegExpParse(url, "\?" + key + "=([^&]+)");
 	if (!value.empty()) {
 		return value;
 	}
-	value = HostRegExpParse(url, "&" + key + "=([a-zA-Z0-9%]+)");
+	value = HostRegExpParse(url, "&" + key + "=([^&]+)");
 	if (!value.empty()) {
 		return value;
 	}
@@ -762,6 +762,61 @@ array<dictionary> AudioList(string path) {
 	return audios;
 }
 
+array<dictionary> Search(string path) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	path.replace("?WithCaption", "");
+	string kw = parse(path, "keyword");
+	if (kw.empty()) {
+		return videos;
+	}
+	string type = HostRegExpParse(path, "search.bilibili.com/([a-zA-Z0-9]+)");
+	string url;
+	if (type == "all") {
+		url = "/x/web-interface/search/all/v2?keyword=" + HostUrlEncode(kw);
+	} else if (type == "video") {
+		url = "/x/web-interface/search/type?search_type=video&keyword=" + HostUrlEncode(kw);
+	} else {
+		return videos;
+	}
+	string res = apiPost(url);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return videos;
+		}
+		JsonValue list;
+		if (type == "all") {
+			for (uint i = 0; i < Root["data"]["result"].size(); i++) {
+				if (Root["data"]["result"][i]["result_type"].asString() == "video") {
+					list = Root["data"]["result"][i]["data"];
+					break;
+				}
+			}
+		} else if (type == "video") {
+			list = Root["data"]["result"];
+		} else {
+			return videos;
+		}
+		for (uint i = 0; i < list.size(); i++) {
+				JsonValue item = list[i];
+				dictionary video;
+				string title = item["title"].asString();
+				title.replace("<em class=\"keyword\">", '');
+				title.replace("</em>", '');
+				video["title"] = title;
+				video["content"] = item["author"].asString() + " | " + title;
+				video["duration"] = parseTime(item["duration"].asString()) * 1000;
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				videos.insertLast(video);
+		}
+	}
+	return videos;
+}
+
 array<dictionary> Recommend(uint page) {
 	array<dictionary> videos;
 	JsonReader Reader;
@@ -949,6 +1004,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("/video/BV") >= 0 && path.find("isfromlist") < 0) {
 		return true;
 	}
+	if (path.find("search.bilibili.com") >= 0) {
+		return true;
+	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
 			return true;
@@ -1009,6 +1067,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 
 	if (path.find("/video/BV") >= 0  && path.find("isfromlist") < 0) {
 		return VideoPages(path);
+	}
+	if (path.find("search.bilibili.com") >= 0) {
+		return Search(path);
 	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {

@@ -237,7 +237,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			JsonValue data = root["data"];
 			aid = data["aid"].asInt();
 			cid = data["cid"].asInt();
-			MetaData["SourceUrl"] = path;
+			// MetaData["SourceUrl"] = path;
 			if (enable_subtitle) {
 				array<dictionary> subtitle;
 				dictionary dic;
@@ -925,7 +925,6 @@ string Audio(const string &in path, dictionary &MetaData, array<dictionary> &Qua
 			}
 			JsonValue data = Root["data"];
 			MetaData["title"] = data["uname"].asString() + " - " + data["title"].asString();
-			MetaData["SourceUrl"] = path;
 		}
 	}
 	res = post("https://www.bilibili.com/audio/music-service-c/web/url?privilege=2&quality=2&sid=" + id);
@@ -954,10 +953,17 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 			return "";
 		}
 		JsonValue data = Root["data"]["room_info"];
+		string author = Root["data"]["anchor_info"]["base_info"]["uname"].asString();
 		if (parse(path, "isfromlist") != "true") {
-			MetaData["title"] = Root["data"]["anchor_info"]["base_info"]["uname"].asString() + " - " +  data["title"].asString();
+			MetaData["title"] = author + " - " +  data["title"].asString();
 		}
-		MetaData["SourceUrl"] = path;
+		string desc = data["description"].asString();
+		if (desc.empty()) {
+			desc = data["title"].asString();
+		}
+		MetaData["author"] = author;
+		MetaData["content"] = data["area_name"].asString() + " | " + desc;
+		MetaData["webUrl"] = makeWebUrl(path);
 		room_id = data["room_id"].asInt();
 	}
 	res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + qn + "&https_url_req=1&ptype=16");

@@ -186,7 +186,7 @@ array<dictionary> VideoPages(string path) {
 							dictionary video;
 							video["title"] = item["part"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&cid=" + item["cid"].asInt();
+							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&p=" + item["page"].asInt() + "&cid=" + item["cid"].asInt();
 							videos.insertLast(video);
 						}
 					}
@@ -195,6 +195,19 @@ array<dictionary> VideoPages(string path) {
 		}
 	}
 	return videos;
+}
+
+string makeWebUrl(string path) {
+	array<string> strs = path.split("?");
+	string p = parse(path, "p");
+	if (strs.length() >= 2) {
+		string url = strs[0];
+		if (!p.empty()) {
+			url += "?p=" + p;
+		}
+		return url;
+	}
+	return path;
 }
 
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
@@ -233,8 +246,17 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				} else {
 					dic["name"] = "【弹幕】" + data["title"].asString();
 					title = data["title"].asString();
-					MetaData["content"] = data["owner"]["name"].asString() + " | " + title;
+					MetaData["author"] = data["owner"]["name"].asString();
+					MetaData["viewCount"] = data["stat"]["view"].asString();
+					MetaData["likeCount"] = data["stat"]["like"].asString();
+					string desc = data["desc"].asString();
+					if (desc.empty()) {
+						MetaData["content"] = title;
+					} else {
+						MetaData["content"] = data["desc"].asString();
+					}
 				}
+				MetaData["webUrl"] = makeWebUrl(path);
 				dic["url"] = danmaku_url + cid;
 				subtitle.insertLast(dic);
 				JsonValue subs;

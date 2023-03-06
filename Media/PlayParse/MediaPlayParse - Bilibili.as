@@ -223,6 +223,8 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	string quality;
 	string cid = parse(path, "cid");
 	bool isPart = !cid.empty();
+	bool ispgc = false;
+	string webUrl = path;
 	if (isPart) {
 		res = apiPost("/x/player/v2?bvid=" + bvid + "&cid=" + cid);
 	} else {
@@ -255,8 +257,13 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					} else {
 						MetaData["content"] = data["desc"].asString();
 					}
+					JsonValue redirect_url = data["redirect_url"];
+					if (redirect_url.isString() && redirect_url.asString().find("bangumi/play/ep") >= 0) {
+						webUrl = redirect_url.asString();
+						ispgc = true;
+					}
 				}
-				MetaData["webUrl"] = makeWebUrl(path);
+				MetaData["webUrl"] = makeWebUrl(webUrl);
 				dic["url"] = danmaku_url + cid;
 				subtitle.insertLast(dic);
 				JsonValue subs;
@@ -284,19 +291,55 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			return url;
 		}
 	}
-
-	res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
+	if (ispgc) {
+		res = apiPost("/pgc/player/web/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
+	} else {
+		res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
+	}
 	if (res.empty()) {
 		return url;
 	}
 	if (reader.parse(res, root) && root.isObject()) {
 		if (root["code"].asInt() == 0) {
-			JsonValue data = root["data"];
+			JsonValue data;
+			if (ispgc) {
+				data = root["result"];
+				JsonValue clip_info_list = data["clip_info_list"];
+				if (clip_info_list.isArray() && clip_info_list.size() > 0) {
+					array<dictionary> chapt;
+					for (uint i = 0; i < clip_info_list.size(); i++) {
+						JsonValue chapter = clip_info_list[i];
+						if (chapter.isObject()) {
+							if (chapter["clipType"].asString() == "CLIP_TYPE_OP") {
+								dictionary startItem;
+								startItem["title"] = "哔哩哔哩-片头";
+								startItem["time"] = formatUInt((chapter["start"].asInt() == 0 ? chapter["start"].asInt() : chapter["start"].asInt() + 1) * 1000);
+								chapt.insertLast(startItem);
+								dictionary contentItem;
+								contentItem["title"] = "哔哩哔哩-正片";
+								contentItem["time"] = formatUInt((chapter["end"].asInt() - 1) * 1000);
+								chapt.insertLast(contentItem);
+							} else if (chapter["clipType"].asString() == "CLIP_TYPE_ED") {
+								dictionary endItem;
+								endItem["title"] = "哔哩哔哩-片尾";
+								endItem["time"] = formatUInt((chapter["start"].asInt() + 1) * 1000);
+								chapt.insertLast(endItem);
+							}
+						}
+					}
+					if (!chapt.empty() && (@QualityList !is null)) {
+						MetaData["chapter"] = chapt;
+						log("已经添加片头片尾时间");
+					}
+				}
+			} else {
+				data = root["data"];
+			}
 			JsonValue urls = data["durl"];
 			if (data["durl"].isArray()) {
 				url = data["durl"][0]["url"].asString();
-				qn = root["data"]["quality"].asInt();
-				JsonValue qualities = root["data"]["accept_quality"];
+				qn = data["quality"].asInt();
+				JsonValue qualities = data["accept_quality"];
 				if (enable_qualities && @QualityList !is null) {
 					for (uint i = 0; i < qualities.size(); i++) {
 						int quality = qualities[i].asInt();

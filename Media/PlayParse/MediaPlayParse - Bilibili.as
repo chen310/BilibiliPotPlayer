@@ -285,7 +285,23 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						subtitle.insertLast(dic);
 					}
 				}
-				MetaData["subtitle"] = subtitle;
+				if (!subtitle.empty()) {
+					MetaData["subtitle"] = subtitle;
+				}
+			}
+			JsonValue points = data["view_points"];
+			if (points.isArray()) {
+				array<dictionary> chapt;
+				for (uint i = 0; i < points.size(); i++) {
+					JsonValue point = points[i];
+					dictionary item;
+					item["title"] = point["content"].asString();
+					item["time"] = formatUInt(point["from"].asInt() * 1000);
+					chapt.insertLast(item);
+				}
+				if (!chapt.empty() && (@QualityList !is null)) {
+					MetaData["chapter"] = chapt;
+				}
 			}
 		} else {
 			return url;

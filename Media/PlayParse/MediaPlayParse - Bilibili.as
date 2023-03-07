@@ -186,7 +186,7 @@ array<dictionary> VideoPages(string path) {
 							dictionary video;
 							video["title"] = item["part"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&p=" + item["page"].asInt() + "&cid=" + item["cid"].asInt();
+							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&p=" + item["page"].asInt();
 							videos.insertLast(video);
 						}
 					}
@@ -221,16 +221,12 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	int defaultQn = 120;
 	int qn = defaultQn;
 	string quality;
-	string cid = parse(path, "cid");
-	bool isPart = !cid.empty();
+	string cid;
+	int p = parseInt(parse(path, "p", "1"));
 	bool ispgc = false;
 	string webUrl = path;
-	if (isPart) {
-		res = apiPost("/x/player/v2?bvid=" + bvid + "&cid=" + cid);
-	} else {
-		res = apiPost("/x/web-interface/view?bvid=" + bvid);
-	}
-
+	array<dictionary> subtitle;
+	res = apiPost("/x/web-interface/view?bvid=" + bvid);
 	if (res.empty()) {
 		return url;
 	}
@@ -238,40 +234,44 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		if (root["code"].asInt() == 0) {
 			JsonValue data = root["data"];
 			aid = data["aid"].asInt();
-			cid = data["cid"].asInt();
-			// MetaData["SourceUrl"] = path;
+			cid = data["pages"][p-1]["cid"].asString();
+			title = data["pages"][p-1]["part"].asString();
+			MetaData["author"] = data["owner"]["name"].asString();
+			MetaData["viewCount"] = data["stat"]["view"].asString();
+			MetaData["likeCount"] = data["stat"]["like"].asString();
+			string desc = data["desc"].asString();
+			if (desc.empty()) {
+				MetaData["content"] = title;
+			} else {
+				MetaData["content"] = title + " | " + desc;
+			}
+			JsonValue redirect_url = data["redirect_url"];
+			if (redirect_url.isString() && redirect_url.asString().find("bangumi/play/ep") >= 0) {
+				webUrl = redirect_url.asString();
+				ispgc = true;
+			}
+			MetaData["webUrl"] = makeWebUrl(webUrl);
 			if (enable_subtitle) {
-				array<dictionary> subtitle;
 				dictionary dic;
-				if (isPart) {
-					dic["name"] = "【弹幕】";
-				} else {
-					dic["name"] = "【弹幕】" + data["title"].asString();
-					title = data["title"].asString();
-					MetaData["author"] = data["owner"]["name"].asString();
-					MetaData["viewCount"] = data["stat"]["view"].asString();
-					MetaData["likeCount"] = data["stat"]["like"].asString();
-					string desc = data["desc"].asString();
-					if (desc.empty()) {
-						MetaData["content"] = title;
-					} else {
-						MetaData["content"] = data["desc"].asString();
-					}
-					JsonValue redirect_url = data["redirect_url"];
-					if (redirect_url.isString() && redirect_url.asString().find("bangumi/play/ep") >= 0) {
-						webUrl = redirect_url.asString();
-						ispgc = true;
-					}
-				}
-				MetaData["webUrl"] = makeWebUrl(webUrl);
+				dic["name"] = "【弹幕】" + title;
 				dic["url"] = danmaku_url + cid;
 				subtitle.insertLast(dic);
+			}
+		} else {
+			return url;
+		}
+	}
+
+	res = apiPost("/x/player/v2?bvid=" + bvid + "&cid=" + cid);
+	if (res.empty()) {
+		return url;
+	}
+	if (reader.parse(res, root) && root.isObject()) {
+		if (root["code"].asInt() == 0) {
+			JsonValue data = root["data"];
+			if (enable_subtitle) {
 				JsonValue subs;
-				if (isPart) {
-					subs = root["data"]["subtitle"]["subtitles"];
-				} else {
-					subs = root["data"]["subtitle"]["list"];
-				}
+				subs = root["data"]["subtitle"]["subtitles"];
 				if (subs.isArray()) {
 					for (uint i = 0; i < subs.size(); i++) {
 						JsonValue sub = subs[i];
@@ -329,7 +329,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					}
 					if (!chapt.empty() && (@QualityList !is null)) {
 						MetaData["chapter"] = chapt;
-						log("已经添加片头片尾时间");
 					}
 				}
 			} else {

@@ -407,6 +407,33 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	return url;
 }
 
+array<dictionary> watchlater() {
+	array<dictionary> videos;
+	string res = apiPost("/x/v2/history/toview");
+	if (!res.empty()) {
+		JsonReader Reader;
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["list"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						if (item.isObject()) {
+							dictionary video;
+							video["title"] = item["title"].asString();
+							video["duration"] = item["duration"].asInt() * 1000;
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							videos.insertLast(video);
+						}
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
 string parse(string url, string key, string defaultValue="") {
 	string value = HostRegExpParse(url, "\?" + key + "=([^&]+)");
 	if (!value.empty()) {
@@ -1093,6 +1120,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("search.bilibili.com") >= 0) {
 		return true;
 	}
+	if (path.find("/watchlater") >= 0) {
+		return true;
+	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
 			return true;
@@ -1154,8 +1184,14 @@ array<dictionary> PlaylistParse(const string &in path) {
 	if (path.find("/video/BV") >= 0  && path.find("isfromlist") < 0) {
 		return VideoPages(path);
 	}
+	if (path.find("/watchlater") >= 0) {
+		return watchlater();
+	}
 	if (path.find("search.bilibili.com") >= 0) {
 		return Search(path);
+	}
+	if (path.find("bilibili.com/watchlater/#/list") >= 0) {
+		return watchlater();
 	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {

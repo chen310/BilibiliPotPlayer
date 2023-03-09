@@ -227,6 +227,7 @@ array<dictionary> Other() {
 		{ { "title", "我关注的直播" }, { "url", "https://link.bilibili.com/p/center/index#/user-center/follow/1" } },
 		{ { "title", "入站必刷" }, { "url", "https://www.bilibili.com/v/popular/history/" } },
 		{ { "title", "搜索" }, { "url", "https://search.bilibili.com/video?keyword=陈奕迅" } },
+		{ { "title", "稍后再看" }, { "url", "https://www.bilibili.com/watchlater/#/list" } },
 	};
 }
 

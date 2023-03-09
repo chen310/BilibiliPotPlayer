@@ -228,6 +228,7 @@ array<dictionary> Other() {
 		{ { "title", "入站必刷" }, { "url", "https://www.bilibili.com/v/popular/history/" } },
 		{ { "title", "搜索" }, { "url", "https://search.bilibili.com/video?keyword=陈奕迅" } },
 		{ { "title", "稍后再看" }, { "url", "https://www.bilibili.com/watchlater/#/list" } },
+		{ { "title", "历史记录" }, { "url", "https://www.bilibili.com/account/history" } },
 	};
 }
 

@@ -421,10 +421,58 @@ array<dictionary> watchlater() {
 						JsonValue item = data[i];
 						if (item.isObject()) {
 							dictionary video;
-							video["title"] = item["title"].asString();
+							int p = item["page"]["page"].asInt();
+							if (p == 1) {
+								video["title"] = item["title"].asString();
+							} else {
+								video["title"] = item["title"].asString() + " | " + item["page"]["part"].asString();
+							}
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?p=" + p + "&isfromlist=true";
 							videos.insertLast(video);
+						}
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
+array<dictionary> History() {
+	array<dictionary> videos;
+	uint max = 0;
+	uint ps = 20;
+	string res = apiPost("/x/web-interface/history/cursor?max=" + max + "&ps=" + ps);
+	if (!res.empty()) {
+		JsonReader Reader;
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["list"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						string type = item["history"]["business"].asString();
+						// archive live pgc
+						if (type == "archive" || type == "live") {
+							if (item.isObject()) {
+								dictionary video;
+								if (type == "live") {
+									video["title"] = "直播 | " + item["title"].asString();
+									video["url"] = item["uri"].asString() + "?isfromlist=true";
+								} else if (type == "archive") {
+									int p = item["history"]["page"].asInt();
+									if (p == 1) {
+										video["title"] = item["title"].asString();
+									} else {
+										video["title"] = item["title"].asString() + " | " + item["history"]["part"].asString();
+									}
+									video["duration"] = item["duration"].asInt() * 1000;
+									video["url"] = "https://www.bilibili.com/video/" + item["history"]["bvid"].asString() + "?p=" + p + "&isfromlist=true";
+								}
+								videos.insertLast(video);
+							}
 						}
 					}
 				}
@@ -947,7 +995,7 @@ array<dictionary> Recommend(uint page) {
 				}
 				dictionary video;
 				if (item["uri"].asString().find("live.bilibili.com") >= 0) {
-					video["title"] = "【直播】" + item["owner"]["name"].asString() + " - " + item["title"].asString();
+					video["title"] = "直播 | " + item["owner"]["name"].asString() + " - " + item["title"].asString();
 					video["url"] = item["uri"].asString() + "?isfromlist=true";
 				} else {
 					video["title"] = item["title"].asString();
@@ -1123,6 +1171,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("/watchlater") >= 0) {
 		return true;
 	}
+	if (path.find("/account/history") >= 0) {
+		return true;
+	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {
 			return true;
@@ -1186,6 +1237,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("/watchlater") >= 0) {
 		return watchlater();
+	}
+	if (path.find("/account/history") >= 0) {
+		return History();
 	}
 	if (path.find("search.bilibili.com") >= 0) {
 		return Search(path);

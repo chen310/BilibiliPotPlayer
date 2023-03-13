@@ -32,6 +32,8 @@ string danmaku_url = subtitle_host +  "/subtitle?font=" + HostUrlEncode("微软�
 string subtitle_url = subtitle_host + "/subtitle?url=";
 // 是否可选择画质
 bool enable_qualities = true;
+// 视频推荐
+bool enable_related = true;
 
 void OnInitialize() {
 	HostSetUrlHeaderHTTP("bilivideo.com", "Referer: https://www.bilibili.com\r\n");
@@ -186,6 +188,31 @@ array<dictionary> VideoPages(string bvid) {
 							video["title"] = item["part"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
 							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&p=" + item["page"].asInt();
+							videos.insertLast(video);
+						}
+					}
+				}
+			}
+		}
+	}
+	if (videos.length() >= 2 || !enable_related) {
+		return videos;
+	}
+	res = apiPost("/x/web-interface/archive/related?bvid=" + bvid);
+	if (!res.empty()) {
+		JsonReader Reader;
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						if (item.isObject()) {
+							dictionary video;
+							video["title"] = item["title"].asString();
+							video["duration"] = item["duration"].asInt() * 1000;
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
 							videos.insertLast(video);
 						}
 					}

@@ -166,8 +166,7 @@ uint gettid(string path) {
 }
 
 // 分P
-array<dictionary> VideoPages(string path) {
-	string bvid = parseBVId(path);
+array<dictionary> VideoPages(string bvid) {
 	array<dictionary> videos;
 	if (bvid.empty()) {
 		return videos;
@@ -199,15 +198,15 @@ array<dictionary> VideoPages(string path) {
 
 string makeWebUrl(string path) {
 	array<string> strs = path.split("?");
+	if (strs.length() <= 1) {
+		return path;
+	}
+	string url = strs[0];
 	string p = parse(path, "p");
-	if (strs.length() >= 2) {
-		string url = strs[0];
-		if (!p.empty()) {
-			url += "?p=" + p;
-		}
+	if (p.empty() || p == "1") {
 		return url;
 	}
-	return path;
+	return url += "?p=" + p;
 }
 
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
@@ -1275,8 +1274,9 @@ array<dictionary> PlaylistParse(const string &in path) {
 	log("Playlist path", path);
 	array<dictionary> result;
 
-	if (path.find("/video/BV") >= 0  && path.find("isfromlist") < 0) {
-		return VideoPages(path);
+	string bvid = parseBVId(path);
+	if (!bvid.empty() && path.find("isfromlist") < 0) {
+		return VideoPages(bvid);
 	}
 	if (path.find("/watchlater") >= 0) {
 		return watchlater();
@@ -1286,9 +1286,6 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("search.bilibili.com") >= 0) {
 		return Search(path);
-	}
-	if (path.find("bilibili.com/watchlater/#/list") >= 0) {
-		return watchlater();
 	}
 	if (path.find("space.bilibili.com") >= 0) {
 		if (path.find("/video") >= 0) {

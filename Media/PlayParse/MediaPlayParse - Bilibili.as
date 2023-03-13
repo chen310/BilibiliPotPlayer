@@ -233,7 +233,7 @@ string makeWebUrl(string path) {
 	if (p.empty() || p == "1") {
 		return url;
 	}
-	return url += "?p=" + p;
+	return url + "?p=" + p;
 }
 
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {

@@ -650,6 +650,50 @@ array<dictionary> spaceVideo(string path) {
 	return videos;
 }
 
+array<dictionary> spaceAudio(string path) {
+	array<dictionary> audios;
+	int ps = 50;
+	int pn = 1;
+	string baseurl = "/audio/music-service/web/song/upper?";
+	baseurl += "uid=" + HostRegExpParse(path, "/([0-9]+)");
+	baseurl += "&ps=" + ps;
+	baseurl += "&order=" + parse(path, "order", "1");
+	while (true) {
+		string url = baseurl + "&pn=" + pn;
+		string res = apiPost(url);
+		if (!res.empty()) {
+			JsonReader Reader;
+			JsonValue Root;
+			if (Reader.parse(res, Root) && Root.isObject()) {
+				if (Root["code"].asInt() == 0) {
+					JsonValue data = Root["data"]["data"];
+					if (data.isArray()) {
+						for (uint i = 0; i < data.size(); i++) {
+							JsonValue item = data[i];
+							if (item.isObject()) {
+								dictionary audio;
+								audio["title"] = item["title"].asString();
+								audio["duration"] = item["duration"].asInt() * 1000;
+								audio["url"] = "https://www.bilibili.com/audio/au" + item["id"].asString() + "?isfromlist=true";
+								audios.insertLast(audio);
+							}
+						}
+					}
+					if (Root["data"]["curPage"].asInt() >= Root["data"]["pageCount"].asInt()) {
+						break;
+					}
+					pn += 1;
+				} else {
+					return audios;
+				}
+			}
+		} else {
+			return audios;
+		}
+	}
+	return audios;
+}
+
 string parseFid(string path) {
 	string fid = parse(path, "fid");
 	if (fid.empty()) {
@@ -1319,6 +1363,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 			return spaceVideo(path);
 		}
 		else if (path.find("/audio") >= 0) {
+			return spaceAudio(path);
 		}
 		else if (path.find("/favlist") >= 0) {
 			return FavList(path);

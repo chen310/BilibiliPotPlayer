@@ -1,6 +1,6 @@
 # BilibiliPotPlayer
 
-适用于 PotPlayer 的 Bilibili 插件。
+适用于 PotPlayer 的 Bilibili 插件。如果配合[油猴脚本](https://greasyfork.org/zh-CN/scripts/461800-bilibilipotplayer)，可以直接在网页打开 PotPlayer 进行播放
 
 ## 安装插件
 

@@ -485,7 +485,10 @@ array<dictionary> History() {
 							if (item.isObject()) {
 								dictionary video;
 								if (type == "live") {
-									video["title"] = "直播 | " + item["title"].asString();
+									if (item["live_status"].asInt() != 1) {
+										continue;
+									}
+									video["title"] = "直播 | " + item["author_name"].asString() + " - " + item["title"].asString();
 									video["url"] = item["uri"].asString() + "?isfromlist=true";
 								} else if (type == "archive") {
 									int p = item["history"]["page"].asInt();
@@ -496,6 +499,8 @@ array<dictionary> History() {
 									}
 									video["duration"] = item["duration"].asInt() * 1000;
 									video["url"] = "https://www.bilibili.com/video/" + item["history"]["bvid"].asString() + "?p=" + p + "&isfromlist=true";
+								} else {
+									continue;
 								}
 								videos.insertLast(video);
 							}

@@ -256,7 +256,7 @@ array<dictionary> GetUrlList(string Category, string Extra, string PathToken, st
 	}
 	if (Category == "Other") {
 		return Other();
-	}	
+	}
 
 	array<dictionary> ret;
 	return ret;

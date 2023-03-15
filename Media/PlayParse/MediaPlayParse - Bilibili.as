@@ -1077,7 +1077,7 @@ array<dictionary> Search(string path) {
 				title.replace("</em>", '');
 				video["title"] = title;
 				video["content"] = item["author"].asString() + " | " + title;
-				video["duration"] = parseTime(item["duration"].asString()) * 1000;
+				video["duration"] = parseTime(item["duration"].asString());
 				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
 				videos.insertLast(video);
 		}
@@ -1126,7 +1126,7 @@ array<dictionary> webDynamic(string path) {
 								string bvid = archive["bvid"].asString();
 								dictionary video;
 								video["title"] = "视频 | " + author + " - " + archive["title"].asString();
-								video["duration"] = parseTime(archive["duration_text"].asString()) * 1000;
+								video["duration"] = parseTime(archive["duration_text"].asString());
 								video["url"] = "https://www.bilibili.com/video/" + bvid + "?isfromlist=true";
 								videos.insertLast(video);
 							}

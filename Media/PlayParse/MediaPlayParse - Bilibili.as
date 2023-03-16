@@ -1039,17 +1039,22 @@ array<dictionary> Search(string path) {
 	array<dictionary> videos;
 	JsonReader Reader;
 	JsonValue Root;
-	path.replace("?WithCaption", "");
-	string kw = parse(path, "keyword");
+	string kw;
+	if (path.find("?WithCaption") >= 0) {
+		path.replace("?WithCaption", "");
+		kw = HostUrlEncode(parse(path, "keyword"));
+	} else {
+		kw = parse(path, "keyword");
+	}
 	if (kw.empty()) {
 		return videos;
 	}
 	string type = HostRegExpParse(path, "search.bilibili.com/([a-zA-Z0-9]+)");
 	string url;
 	if (type == "all") {
-		url = "/x/web-interface/search/all/v2?keyword=" + HostUrlEncode(kw);
+		url = "/x/web-interface/search/all/v2?keyword=" + kw;
 	} else if (type == "video") {
-		url = "/x/web-interface/search/type?search_type=video&keyword=" + HostUrlEncode(kw);
+		url = "/x/web-interface/search/type?search_type=video&keyword=" + kw;
 	} else {
 		return videos;
 	}

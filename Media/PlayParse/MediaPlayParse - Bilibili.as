@@ -143,7 +143,6 @@ void log(string item, int info) {
 string post(string url, string data="") {
 	string UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36";
 	string Headers = "Referer: https://www.bilibili.com\r\n";
-	Headers += "User-Agent: " + UserAgent + "\r\n";
 	if (!cookie.empty()) {
 		Headers += "Cookie: " + cookie + "\r\n";
 	}
@@ -736,37 +735,50 @@ array<dictionary> FavList(string path) {
 	if (fid.empty()) {
 		return videos;
 	}
-	string url = "";
+	int pn = 1;
+	int ps = 20;
+	string baseurl;
+	string url;
 	string ftype = parse(path, "ftype");
 	// 订阅和收藏
 	if (ftype == "collect") {
-		url = "/x/space/fav/season/list?season_id=" + fid + "&pn=1&ps=20";
+		baseurl = "/x/space/fav/season/list?season_id=" + fid + "&ps=" + ps;
 	} else {
-		url = "/x/v3/fav/resource/list?media_id=" + fid + "&pn=1&ps=20";
-		url += "&keyword=" + parse(path, "keyword");
-		url += "&order=" + parse(path, "order", "mtime");
+		baseurl = "/x/v3/fav/resource/list?media_id=" + fid + "&ps=" + ps;
+		baseurl += "&keyword=" + parse(path, "keyword");
+		baseurl += "&order=" + parse(path, "order", "mtime");
 		// url += "&type=" + parse(path, "type", "0");
-		url += "&tid=" + parse(path, "tid", "0");
+		baseurl += "&tid=" + parse(path, "tid", "0");
 	}
-	string res = apiPost(url);
-	if (res.empty()) {
-		return videos;
-	}
-	JsonValue Root;
-	if (Reader.parse(res, Root) && Root.isObject()) {
-		if (Root["code"].asInt() == 0) {
-			JsonValue data = Root["data"]["medias"];
-			if (data.isArray()) {
-				for (uint i = 0; i < data.size(); i++) {
-					JsonValue item = data[i];
-					if (item.isObject()) {
-						dictionary video;
-						video["title"] = item["title"].asString();
-						video["duration"] = item["duration"].asInt() * 1000;
-						video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
-						videos.insertLast(video);
+	while (true) {
+		url = baseurl + "&pn=" + pn;
+		string res = apiPost(url);
+		if (res.empty()) {
+			return videos;
+		}
+		JsonValue Root;
+		if (Reader.parse(res, Root) && Root.isObject()) {
+			if (Root["code"].asInt() == 0) {
+				JsonValue data = Root["data"]["medias"];
+				if (data.isArray()) {
+					for (uint i = 0; i < data.size(); i++) {
+						JsonValue item = data[i];
+						if (item.isObject()) {
+							dictionary video;
+							video["title"] = item["title"].asString();
+							video["duration"] = item["duration"].asInt() * 1000;
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							videos.insertLast(video);
+						}
 					}
 				}
+				int count = Root["data"]["info"]["media_count"].asInt();
+				if (pn * ps >= count) {
+					break;
+				}
+				pn += 1;
+			} else {
+				return videos;
 			}
 		}
 	}

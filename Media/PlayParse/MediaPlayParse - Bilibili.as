@@ -387,8 +387,12 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 							continue;
 						}
 						dictionary qualityitem;
+						dictionary qualityitem2;
 						if (quality == qn) {
 							qualityitem["url"] = url;
+							if (data["durl"][0]["backup_url"].isArray() && data["durl"][0]["backup_url"].size() > 0) {
+								qualityitem2["url"] = data["durl"][0]["backup_url"][0].asString();
+							}
 						} else {
 							string quality_res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + quality + "&fnval=128&fourk=1");
 							JsonValue temp;
@@ -396,16 +400,25 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 								if (temp["code"].asInt() != 0) {
 									continue;
 								}
-								JsonValue qyality_data = temp["data"]["durl"];
-								if (qyality_data.isArray()) {
-									qualityitem["url"] = qyality_data[0]["url"].asString();
+								JsonValue quality_data = temp["data"]["durl"];
+								if (quality_data.isArray()) {
+									qualityitem["url"] = quality_data[0]["url"].asString();
+									if (quality_data[0]["backup_url"].isArray() && quality_data[0]["backup_url"].size() > 0) {
+										qualityitem2["url"] = quality_data[0]["backup_url"][0].asString();
+									}
 								}
 							}
 						}
+						int itag = getVideoItag(quality);
 						qualityitem["quality"] = getVideoquality(quality);
 						qualityitem["qualityDetail"] = qualityitem["quality"];
-						qualityitem["itag"] = getVideoItag(quality);
+						qualityitem["itag"] = itag;
 						QualityList.insertLast(qualityitem);
+
+						qualityitem2["quality"] =  "- " + getVideoquality(quality) + " 备份";
+						qualityitem2["qualityDetail"] = qualityitem2["quality"];
+						qualityitem2["itag"] = itag + 20;
+						QualityList.insertLast(qualityitem2);
 					}
 				}
 			}
@@ -1320,8 +1333,13 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 				for (uint i = 0; i < qualities.size(); i++) {
 					int quality = qualities[i]["qn"].asInt();
 					dictionary qualityitem;
+					dictionary qualityitem2;
+					string backup_url;
 					if (quality == qn) {
 						qualityitem["url"] = url;
+						if (data.size() > 1) {
+							qualityitem2["url"] = data[1]["url"].asString();
+						}
 					} else {
 						string quality_res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + quality + "&https_url_req=1&ptype=16");
 						JsonValue temp;
@@ -1332,13 +1350,22 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 							JsonValue qyality_data = temp["data"]["durl"];
 							if (qyality_data.isArray()) {
 								qualityitem["url"] = qyality_data[0]["url"].asString();
+								if (qyality_data.size() > 1) {
+									qualityitem2["url"] = qyality_data[1]["url"].asString();
+								}
 							}
 						}
 					}
+					int itag = getItag(quality);
 					qualityitem["quality"] = qualities[i]["desc"].asString();
-					qualityitem["qualityDetail"] = qualities[i]["desc"].asString();
-					qualityitem["itag"] = getItag(quality);
+					qualityitem["qualityDetail"] = qualityitem["quality"];
+					qualityitem["itag"] = itag;
 					QualityList.insertLast(qualityitem);
+
+					qualityitem2["quality"] =  "- " + qualities[i]["desc"].asString() + " 备份";
+					qualityitem2["qualityDetail"] = qualityitem2["quality"];
+					qualityitem2["itag"] = itag + 20;
+					QualityList.insertLast(qualityitem2);
 				}
 			}
 		}

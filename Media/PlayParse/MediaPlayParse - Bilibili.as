@@ -167,17 +167,24 @@ uint gettid(string path) {
 }
 
 // 分P
-array<dictionary> VideoPages(string bvid) {
+array<dictionary> VideoPages(string id) {
 	array<dictionary> videos;
-	if (bvid.empty()) {
+	if (id.empty()) {
 		return videos;
 	}
-	string res = apiPost("/x/web-interface/view?bvid=" + bvid);
+	string res;
+	if (id.find("BV") == 0) {
+		res = apiPost("/x/web-interface/view?bvid=" + id);
+	} else {
+		res = apiPost("/x/web-interface/view?aid=" + id);
+	}
+	string bvid;
 	if (!res.empty()) {
 		JsonReader Reader;
 		JsonValue Root;
 		if (Reader.parse(res, Root) && Root.isObject()) {
 			if (Root["code"].asInt() == 0) {
+				bvid = Root["data"]["bvid"].asString();
 				JsonValue data = Root["data"]["pages"];
 				if (data.isArray()) {
 					for (uint i = 0; i < data.size(); i++) {
@@ -186,7 +193,7 @@ array<dictionary> VideoPages(string bvid) {
 							dictionary video;
 							video["title"] = item["part"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + Root["data"]["bvid"].asString() + "?isfromlist=true&p=" + item["page"].asInt();
+							video["url"] = "https://www.bilibili.com/video/" + bvid + "?isfromlist=true&p=" + item["page"].asInt();
 							videos.insertLast(video);
 						}
 					}
@@ -540,8 +547,11 @@ string parse(string url, string key, string defaultValue="") {
 }
 
 string parseBVId(string url) {
-	string bvid = HostRegExpParse(url, "(BV[a-zA-Z0-9]+)");
-	return bvid;
+	return HostRegExpParse(url, "(BV[a-zA-Z0-9]+)");
+}
+
+string parseAVId(string url) {
+	return HostRegExpParse(url, "av([0-9]+)");
 }
 
 int parseTime(string s) {
@@ -1396,7 +1406,10 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("bilibili.com") < 0) {
 		return false;
 	}
-	if (path.find("/video/BV") >= 0 && path.find("isfromlist") < 0) {
+	if (path.find("isfromlist") >= 0) {
+		return false;
+	}
+	if (!parseBVId(path).empty() || !parseAVId(path).empty()) {
 		return true;
 	}
 	if (path.find("search.bilibili.com") >= 0) {
@@ -1470,8 +1483,12 @@ array<dictionary> PlaylistParse(const string &in path) {
 	array<dictionary> result;
 
 	string bvid = parseBVId(path);
-	if (!bvid.empty() && path.find("isfromlist") < 0) {
+	if (!bvid.empty()) {
 		return VideoPages(bvid);
+	}
+	string avid = parseAVId(path);
+	if (!avid.empty()) {
+		return VideoPages(avid);
 	}
 	if (path.find("/watchlater") >= 0) {
 		return watchlater();

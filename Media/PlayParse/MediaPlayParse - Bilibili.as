@@ -111,6 +111,29 @@ string ServerLogin(string User, string Pass)
 	return "cookie 设置成功";
 }
 
+uint status = 0;
+string GetStatus()
+{
+	string info = "";
+
+	switch (status)
+	{
+	case  1:
+		info = "Parsing bilibili playlist";
+		break;
+	case  2:
+		info = "Parsing bilibili video/audio";
+		break;
+	case  3:
+		info = "Parsing bilibili playback link";
+		break;
+	default:
+		info = "Waiting for parsing";
+	}
+
+	return info;
+}
+
 void handleCookie(string full_cookie) {
 	array<string> cookies = full_cookie.split(";");
 	for (uint i=0; i < cookies.length(); i++) {
@@ -339,6 +362,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			return url;
 		}
 	}
+	status = 3;
 	if (ispgc) {
 		res = apiPost("/pgc/player/web/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
 	} else {
@@ -1290,6 +1314,7 @@ string Audio(const string &in path, dictionary &MetaData, array<dictionary> &Qua
 			MetaData["title"] = data["uname"].asString() + " - " + data["title"].asString();
 		}
 	}
+	status = 3;
 	res = post("https://www.bilibili.com/audio/music-service-c/web/url?privilege=2&quality=2&sid=" + id);
 	res = HostDecompress(res);
 	if (Reader.parse(res, Root) && Root.isObject()) {
@@ -1329,6 +1354,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		MetaData["webUrl"] = makeWebUrl(path);
 		room_id = data["room_id"].asInt();
 	}
+	status = 3;
 	res = post("https://api.live.bilibili.com/xlive/web-room/v1/playUrl/playUrl?cid=" + room_id + "&platform=web&qn=" + qn + "&https_url_req=1&ptype=16");
 	if (Reader.parse(res, Root) && Root.isObject()) {
 		qn = Root["data"]["current_qn"].asInt();
@@ -1384,6 +1410,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 }
 
 bool PlayitemCheck(const string &in path) {
+	status = 0;
 	if (path.find("bilibili.com") < 0) {
 		return false;
 	}
@@ -1403,6 +1430,7 @@ bool PlayitemCheck(const string &in path) {
 }
 
 bool PlaylistCheck(const string &in path) {
+	status = 0;
 	if (path.find("bilibili.com") < 0) {
 		return false;
 	}
@@ -1480,6 +1508,7 @@ bool PlaylistCheck(const string &in path) {
 
 array<dictionary> PlaylistParse(const string &in path) {
 	log("Playlist path", path);
+	status = 1;
 	array<dictionary> result;
 
 	string bvid = parseBVId(path);
@@ -1559,6 +1588,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 
 string PlayitemParse(const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	log("Playitem path", path);
+	status = 2;
 	if (path.find("/video/BV") >= 0  && path.find("isfromlist") >= 0) {
 		string bvid = parseBVId(path);
 		return Video(bvid, path, MetaData, QualityList);

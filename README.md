@@ -75,7 +75,7 @@ PS:有了 cookie 能操作 B 站账号的大部分功能，切勿泄露或分享
 
 ### 创建自动更新的播放列表
 
-按 <kbd>F6</kbd> 打开播放列表，点击新建专辑，起一个合适的专辑名称，选择外部播放器列表，并填写相应的链接，再点击确定即可。这样就得到一个可以自动更新的列表。
+按 <kbd>F6</kbd> 打开播放列表，点击新建专辑，起一个合适的专辑名称，选择外部播放列表，并填写相应的链接，再点击确定即可。这样就得到一个可以自动更新的列表。
 
 ![Create_Playlist](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/create_playlist_1.png)
 

@@ -23,7 +23,7 @@
 // array<dictionary> PlaylistParse(const string &in)	-> parse playlist
 
 
-bool debug = true;
+bool debug = false;
 string cookie = "";
 int uid = 0;
 bool enable_subtitle = true;

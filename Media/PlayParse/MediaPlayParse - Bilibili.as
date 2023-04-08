@@ -273,8 +273,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	string url;
 	JsonReader reader;
 	JsonValue root;
-	int defaultQn = 120;
-	int qn = defaultQn;
+	int qn = 127;
 	string quality;
 	string cid;
 	int p = parseInt(parse(path, "p", "1"));
@@ -430,7 +429,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					string flacquality;
 					flacquality = formatFloat(data["dash"]["flac"]["audio"]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
 					dictionary flacqualityitem;
-					int flacitag = 5;
 					flacqualityitem["url"] = data["dash"]["flac"]["audio"]["baseUrl"].asString();
 					flacqualityitem["quality"] = "FLAC" +flacquality;
 					flacqualityitem["qualityDetail"] = "FLAC" ;

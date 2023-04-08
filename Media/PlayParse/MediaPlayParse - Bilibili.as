@@ -271,7 +271,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	int aid;
 	string title;
 	string url;
-	string urllist;
 	JsonReader reader;
 	JsonValue root;
 	int defaultQn = 120;
@@ -411,27 +410,22 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			if (data["dash"].isObject()) {
 				
 				JsonValue videos = data["dash"]["video"];
-				// if (enable_qualities && @QualityList !is null) {
+				if (enable_qualities && @QualityList !is null) {
 					for (uint i = 0; i < videos.size(); i++) {
 						int quality = videos[i]["id"].asInt();
-						// if (defaultQn > qn && quality > qn) {
-						// 	continue;
-						// }
 						dictionary qualityitem;
-						// if (quality == qn) {
-						// 	qualityitem["url"] = data["dash"]["video"][i]["baseUrl"];
-						// } 
 						int  codecid = videos[i]["codecid"].asInt();
 						url = videos[i]["baseUrl"].asString();
 						qualityitem["url"] = url;
-						int itag = getVideoItag(quality);
+						int itag = videos[i]["id"].asInt() *10 +codecid;
+						int trueitag = getTrueItag(itag);
 						qualityitem["codec"] = getCodec(codecid);
 						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid) ;
 						qualityitem["qualityDetail"] = qualityitem["quality"];
-						qualityitem["itag"] = itag;
+						qualityitem["itag"] = trueitag;
 						QualityList.insertLast(qualityitem);
 					}
-				// }
+				}
 				if (data["dash"]["flac"].isObject()){
 					string flacquality;
 					flacquality = formatFloat(data["dash"]["flac"]["audio"]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
@@ -440,11 +434,11 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					flacqualityitem["url"] = data["dash"]["flac"]["audio"]["baseUrl"].asString();
 					flacqualityitem["quality"] = "FLAC" +flacquality;
 					flacqualityitem["qualityDetail"] = "FLAC" ;
-					flacqualityitem["itag"] = flacitag;
+					flacqualityitem["itag"] = 258;
 					QualityList.insertLast(flacqualityitem);
 				}
                 JsonValue audios = data["dash"]["audio"];
-                // // if (enable_qualities && @QualityList !is null) {
+                if (enable_qualities && @QualityList !is null) {
 					for (uint i = 0; i < audios.size(); i++) {
 						string audioquality;
                         audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
@@ -454,10 +448,10 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
                         audioqualityitem["url"] = audios[i]["baseUrl"].asString();
 						audioqualityitem["quality"] = getAudioquality(audioid) + " " + audioquality ;
 						audioqualityitem["qualityDetail"] = audioqualityitem["quality"] ;
-						// audioqualityitem["itag"] = 1;
+						audioqualityitem["itag"] = audioitag;
 						QualityList.insertLast(audioqualityitem);
 					}
-				// }
+				}
 			}
 		} else {
 			return url;
@@ -1287,9 +1281,20 @@ int getVideoItag(int qn) {
 	return qn;
 }
 
+int getTrueItag(int itag) {
+	array<int> itags = {1282,1283,1272,1273,1262,1263,1207,1212,1213,1167,1172,1173,1127,1132,1133,807,812,813,647,652,653,327,332,333,167,172,173,67,72,73
+};
+	array<int> tis = {102,571,101,702,266,701,138,272,401,299,303,699,264,271,400,137,248,399,136,247,398,135,244,397,134,243,396,133,242,395};
+	int idx = itags.find(itag);
+	if (idx >= 0) {
+		return tis[idx];
+	}
+	return itag;
+}
+
 int getAudioItag(int id) {
 	array<int> ids = {30280, 30232, 30216};
-	array<int> itags = {3, 2, 1};
+	array<int> itags = {327, 256, 139};
 	int idx = ids.find(id);
 	if (idx >= 0) {
 		return itags[idx];
@@ -1319,7 +1324,7 @@ string getAudioquality(int id) {
 
 string getCodec(int codecid) {
 	array<int> codecids = {7, 12, 13};
-	array<string> codec = {"AVC", "HEVC", "AV1"};
+	array<string> codec = {" AVC", " HEVC", " AV1"};
 	int idx = codecids.find(codecid);
 	if (idx >= 0) {
 		return codec[idx];

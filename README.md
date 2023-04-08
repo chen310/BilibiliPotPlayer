@@ -8,11 +8,11 @@
 
 将项目 `Media/PlayParse` 路径下的 `MediaPlayParse - Bilibili.as` 和 `MediaPlayParse - Bilibili.ico` 两个文件复制到 `{PotPlayer 安装路径}\Extension\Media\PlayParse` 文件夹下。
 
-`MediaPlayParse - Bilibili.as` 提供了解析 `Bilibil` 链接的功能。
+`MediaPlayParse - Bilibili.as` 提供了解析 `Bilibili` 链接的功能。
 
 将项目 `Media/UrlList` 路径下的 `MediaUrlList - Bilibili.as` 和 `MediaUrlList - Bilibili.ico` 两个文件复制到 `{PotPlayer 安装路径}\Extension\Media\UrlList` 文件夹下。
 
-`MediaUrlList - Bilibili.as` 提供了列出 `Bilibil` 常用链接的功能，使用方式为按下 <kbd>ctrl</kbd> + <kbd>U</kbd> 并选择要播放的项目，如下图所示
+`MediaUrlList - Bilibili.as` 提供了列出 `Bilibili` 常用链接的功能，使用方式为按下 <kbd>ctrl</kbd> + <kbd>U</kbd> 并选择要播放的项目，如下图所示
 
 ![UrlList](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/urllist.png)
 

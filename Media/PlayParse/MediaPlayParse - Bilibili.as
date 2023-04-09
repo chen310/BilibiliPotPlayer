@@ -273,8 +273,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	string url;
 	JsonReader reader;
 	JsonValue root;
-	int defaultQn = 120;
-	int qn = defaultQn;
+	int qn = 127;
 	string quality;
 	string cid;
 	int p = parseInt(parse(path, "p", "1"));
@@ -364,9 +363,9 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	}
 	status = 3;
 	if (ispgc) {
-		res = apiPost("/pgc/player/web/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
+		res = apiPost("/pgc/player/web/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=4048&fourk=1");
 	} else {
-		res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=128&fourk=1");
+		res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + qn + "&fnval=4048&fourk=1");
 	}
 	if (res.empty()) {
 		return url;
@@ -406,59 +405,51 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			} else {
 				data = root["data"];
 			}
-			JsonValue urls = data["durl"];
-			if (data["durl"].isArray()) {
-				url = data["durl"][0]["url"].asString();
-				qn = data["quality"].asInt();
-				JsonValue qualities = data["accept_quality"];
+			
+			if (data["dash"].isObject()) {
+				
+				JsonValue videos = data["dash"]["video"];
 				if (enable_qualities && @QualityList !is null) {
-					for (uint i = 0; i < qualities.size(); i++) {
-						int quality = qualities[i].asInt();
-						if (defaultQn > qn && quality > qn) {
-							continue;
-						}
+					for (uint i = 0; i < videos.size(); i++) {
+						int quality = videos[i]["id"].asInt();
 						dictionary qualityitem;
-						dictionary qualityitem2;
-						if (quality == qn) {
-							qualityitem["url"] = url;
-							if (data["durl"][0]["backup_url"].isArray() && data["durl"][0]["backup_url"].size() > 0) {
-								qualityitem2["url"] = data["durl"][0]["backup_url"][0].asString();
-							}
-						} else {
-							string quality_res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + quality + "&fnval=128&fourk=1");
-							JsonValue temp;
-							if (reader.parse(quality_res, temp) && temp.isObject()) {
-								if (temp["code"].asInt() != 0) {
-									continue;
-								}
-								JsonValue quality_data = temp["data"]["durl"];
-								if (quality_data.isArray()) {
-									qualityitem["url"] = quality_data[0]["url"].asString();
-									if (quality_data[0]["backup_url"].isArray() && quality_data[0]["backup_url"].size() > 0) {
-										qualityitem2["url"] = quality_data[0]["backup_url"][0].asString();
-									}
-								}
-							}
-						}
-						int itag = getVideoItag(quality);
-						qualityitem["quality"] = getVideoquality(quality);
+						int  codecid = videos[i]["codecid"].asInt();
+						url = videos[i]["baseUrl"].asString();
+						qualityitem["url"] = url;
+						int itag = videos[i]["id"].asInt() *10 +codecid;
+						int trueitag = getTrueItag(itag);
+						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid) ;
 						qualityitem["qualityDetail"] = qualityitem["quality"];
-						qualityitem["itag"] = itag;
+						qualityitem["itag"] = trueitag;
 						QualityList.insertLast(qualityitem);
-
-						qualityitem2["quality"] =  "- " + getVideoquality(quality) + " 备份";
-						qualityitem2["qualityDetail"] = qualityitem2["quality"];
-						qualityitem2["itag"] = itag + 20;
-						QualityList.insertLast(qualityitem2);
+					}
+				}
+				if (data["dash"]["flac"].isObject()){
+					string flacquality;
+					flacquality = formatFloat(data["dash"]["flac"]["audio"]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
+					dictionary flacqualityitem;
+					flacqualityitem["url"] = data["dash"]["flac"]["audio"]["baseUrl"].asString();
+					flacqualityitem["quality"] = "FLAC" +flacquality;
+					flacqualityitem["qualityDetail"] = flacqualityitem["quality"];
+					flacqualityitem["itag"] = 258;
+					QualityList.insertLast(flacqualityitem);
+				}
+                JsonValue audios = data["dash"]["audio"];
+                if (enable_qualities && @QualityList !is null) {
+					for (uint i = 0; i < audios.size(); i++) {
+						string audioquality;
+                        audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
+						dictionary audioqualityitem;
+						int audioid = audios[i]["id"].asInt();
+						int audioitag = getAudioItag(audioid);
+                        audioqualityitem["url"] = audios[i]["baseUrl"].asString();
+						audioqualityitem["quality"] =  "AAC " + audioquality ;
+						audioqualityitem["qualityDetail"] = audioqualityitem["quality"] ;
+						audioqualityitem["itag"] = audioitag;
+						QualityList.insertLast(audioqualityitem);
 					}
 				}
 			}
-			else if (data["dash"].isObject()) {
-				if (data["dash"]["video"].isArray()) {
-					url = data["dash"]["video"][0]["baseUrl"].asString();
-				}
-			}
-			quality = data["quality"].asInt();
 		} else {
 			return url;
 		}
@@ -1287,12 +1278,43 @@ int getVideoItag(int qn) {
 	return qn;
 }
 
+int getTrueItag(int itag) {
+	array<int> itags = {1282,1283,1272,1273,1262,1263,1207,1212,1213,1167,1172,1173,1127,1132,1133,807,812,813,647,652,653,327,332,333,167,172,173,67,72,73
+};
+	array<int> tis = {102,571,101,702,266,701,138,272,401,299,303,699,264,271,400,137,248,399,136,247,398,135,244,397,134,243,396,133,242,395};
+	int idx = itags.find(itag);
+	if (idx >= 0) {
+		return tis[idx];
+	}
+	return itag;
+}
+
+int getAudioItag(int id) {
+	array<int> ids = {30280, 30232, 30216};
+	array<int> itags = {327, 256, 139};
+	int idx = ids.find(id);
+	if (idx >= 0) {
+		return itags[idx];
+	}
+	return id;
+}
+
 string getVideoquality(int qn) {
 	array<int> qns = {127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16, 6};
 	array<string> qualities = {"8K 超高清", "杜比视界", "HDR 真彩色", "4K 超清", "1080P60 高帧率", "1080P+ 高码率", "1080P 高清", "720P60 高帧率", "720P 高清", "480P 清晰", "360P 流畅", "240P 极速"};
 	int idx = qns.find(qn);
 	if (idx >= 0) {
 		return qualities[idx];
+	}
+	return "未知";
+}
+
+string getCodec(int codecid) {
+	array<int> codecids = {7, 12, 13};
+	array<string> codec = {" AVC", " HEVC", " AV1"};
+	int idx = codecids.find(codecid);
+	if (idx >= 0) {
+		return codec[idx];
 	}
 	return "未知";
 }
@@ -1605,3 +1627,4 @@ string PlayitemParse(const string &in path, dictionary &MetaData, array<dictiona
 
 	return path;
 }
+

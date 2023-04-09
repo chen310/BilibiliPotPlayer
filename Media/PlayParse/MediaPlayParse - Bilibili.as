@@ -418,7 +418,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						qualityitem["url"] = url;
 						int itag = videos[i]["id"].asInt() *10 +codecid;
 						int trueitag = getTrueItag(itag);
-						qualityitem["codec"] = getCodec(codecid);
 						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid) ;
 						qualityitem["qualityDetail"] = qualityitem["quality"];
 						qualityitem["itag"] = trueitag;
@@ -431,7 +430,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					dictionary flacqualityitem;
 					flacqualityitem["url"] = data["dash"]["flac"]["audio"]["baseUrl"].asString();
 					flacqualityitem["quality"] = "FLAC" +flacquality;
-					flacqualityitem["qualityDetail"] = "FLAC" ;
+					flacqualityitem["qualityDetail"] = flacqualityitem["quality"];
 					flacqualityitem["itag"] = 258;
 					QualityList.insertLast(flacqualityitem);
 				}
@@ -444,7 +443,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						int audioid = audios[i]["id"].asInt();
 						int audioitag = getAudioItag(audioid);
                         audioqualityitem["url"] = audios[i]["baseUrl"].asString();
-						audioqualityitem["quality"] = getAudioquality(audioid) + " " + audioquality ;
+						audioqualityitem["quality"] =  "AAC " + audioquality ;
 						audioqualityitem["qualityDetail"] = audioqualityitem["quality"] ;
 						audioqualityitem["itag"] = audioitag;
 						QualityList.insertLast(audioqualityitem);
@@ -1304,16 +1303,6 @@ string getVideoquality(int qn) {
 	array<int> qns = {127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16, 6};
 	array<string> qualities = {"8K 超高清", "杜比视界", "HDR 真彩色", "4K 超清", "1080P60 高帧率", "1080P+ 高码率", "1080P 高清", "720P60 高帧率", "720P 高清", "480P 清晰", "360P 流畅", "240P 极速"};
 	int idx = qns.find(qn);
-	if (idx >= 0) {
-		return qualities[idx];
-	}
-	return "未知";
-}
-
-string getAudioquality(int id) {
-	array<int> ids = {30280, 30232, 30216};
-	array<string> qualities = {"AAC", "AAC", "AAC"};
-	int idx = ids.find(id);
 	if (idx >= 0) {
 		return qualities[idx];
 	}

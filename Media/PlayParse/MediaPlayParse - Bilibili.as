@@ -45,6 +45,7 @@ void OnInitialize() {
 }
 
 string host = "https://api.bilibili.com";
+string mixin_key;
 
 string GetTitle() {
 	return "Bilibili";
@@ -175,6 +176,40 @@ string post(string url, string data="") {
 
 string apiPost(string api, string data="") {
 	return post(host + api);
+}
+
+string getMixinKey() {
+	JsonReader Reader;
+	JsonValue Root;
+	string key = "";
+	string res = apiPost("/x/web-interface/nav");
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].isInt()) {
+			JsonValue wbi_img = Root["data"]["wbi_img"];
+			string img_url = wbi_img["img_url"].asString();
+			string sub_url = wbi_img["sub_url"].asString();
+			array<string> parts = img_url.split("/");
+			string img_value = parts[parts.length() - 1].split(".")[0];
+			parts = sub_url.split("/");
+			string sub_value = parts[parts.length() - 1].split(".")[0];
+			string ae = img_value + sub_value;
+			array<int> oe = {46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52};
+			for (int i = 0; i < oe.length(); i++) {
+				key += ae.substr(oe[i], 1);
+			}
+		}
+	}
+	if (key.empty()) {
+		return key;
+	}
+	return key.substr(0,32);
+}
+
+string encWbi(string params) {
+	if (mixin_key.empty()) {
+		mixin_key = getMixinKey();
+	}
+	return HostHashMD5(params + mixin_key);
 }
 
 uint gettid(string path) {
@@ -650,13 +685,20 @@ array<dictionary> spaceVideo(string path) {
 	int ps = 50;
 	int pn = 1;
 	string baseurl = "/x/space/wbi/arc/search?";
-	baseurl += "mid=" + HostRegExpParse(path, "/([0-9]+)");
-	baseurl += "&ps=" + ps;
-	baseurl += "&tid=" + parse(path, "tid", "0");
-	baseurl += "&keyword=" + parse(path, "keyword");
-	baseurl += "&order=" + parse(path, "order", "pubdate");
+	string params1;
+	string params2;
+	params1 += "keyword=" + parse(path, "keyword");
+	params1 += "&mid=" + HostRegExpParse(path, "/([0-9]+)");
+	params1 += "&order=" + parse(path, "order", "pubdate");
+
+	params2 += "&ps=" + ps;
+	params2 += "&tid=" + parse(path, "tid", "0");
 	while (true) {
-		string url = baseurl + "&pn=" + pn;
+		string params = params1 + "&pn=" + pn + params2;
+		string w_rid = encWbi(params);
+		params += "&w_rid=" + w_rid;
+
+		string url = baseurl + params;
 		string res = apiPost(url);
 		if (!res.empty()) {
 			JsonReader Reader;

@@ -209,7 +209,16 @@ string encWbi(string params) {
 	if (mixin_key.empty()) {
 		mixin_key = getMixinKey();
 	}
-	return HostHashMD5(params + mixin_key);
+	array<string> lst = params.split("&");
+	lst.sortAsc();
+	string newParams;
+	for (uint i = 0; i < lst.length(); i++)
+	{
+		newParams += lst[i];
+		if (i != lst.length() - 1)
+			newParams += "&";
+	}
+	return HostHashMD5(newParams + mixin_key);
 }
 
 uint gettid(string path) {

@@ -319,7 +319,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	JsonValue root;
 	int qn = 127;
 	string quality;
-	string cid;
+	string cid = parse(path, "cid");
 	int p = parseInt(parse(path, "p", "1"));
 	bool ispgc = false;
 	string webUrl = path;
@@ -332,6 +332,14 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		if (root["code"].asInt() == 0) {
 			JsonValue data = root["data"];
 			aid = data["aid"].asInt();
+			if (!cid.empty()) {
+				for (uint i = 0; i < data["pages"].size(); i++) {
+					if (data["pages"][i]["cid"].asString() == cid) {
+						p = i + 1;
+						break;
+					}
+				}
+			}
 			cid = data["pages"][p-1]["cid"].asString();
 			title = data["pages"][p-1]["part"].asString();
 			MetaData["author"] = data["owner"]["name"].asString();
@@ -1095,7 +1103,7 @@ array<dictionary> Banggumi(string id, string type) {
 					video["title"] = "【" + item["badge"].asString() + "】" + item["share_copy"].asString();
 				}
 				video["duration"] = item["duration"].asInt();
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true&cid=" + item["cid"].asString();
 				videos.insertLast(video);
 			}
 		}

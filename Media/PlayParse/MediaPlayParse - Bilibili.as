@@ -194,7 +194,7 @@ string getMixinKey() {
 			string sub_value = parts[parts.length() - 1].split(".")[0];
 			string ae = img_value + sub_value;
 			array<int> oe = {46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52};
-			for (int i = 0; i < oe.length(); i++) {
+			for (uint i = 0; i < oe.length(); i++) {
 				key += ae.substr(oe[i], 1);
 			}
 		}
@@ -254,13 +254,13 @@ array<dictionary> VideoPages(string id) {
 				bvid = Root["data"]["bvid"].asString();
 				JsonValue data = Root["data"]["pages"];
 				if (data.isArray()) {
-					for (uint i = 0; i < data.size(); i++) {
+					for (int i = 0; i < data.size(); i++) {
 						JsonValue item = data[i];
 						if (item.isObject()) {
 							dictionary video;
 							video["title"] = item["part"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + bvid + "?isfromlist=true&p=" + item["page"].asInt();
+							video["url"] = "https://www.bilibili.com/video/" + bvid + "?p=" + item["page"].asInt();
 							video["thumbnail"] = item["first_frame"].asString();
 							video["author"] = Root["data"]["owner"]["name"].asString();
 							videos.insertLast(video);
@@ -281,13 +281,13 @@ array<dictionary> VideoPages(string id) {
 			if (Root["code"].asInt() == 0) {
 				JsonValue data = Root["data"];
 				if (data.isArray()) {
-					for (uint i = 0; i < data.size(); i++) {
+					for (int i = 0; i < data.size(); i++) {
 						JsonValue item = data[i];
 						if (item.isObject()) {
 							dictionary video;
 							video["title"] = item["title"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 							video["thumbnail"] = item["pic"].asString();
 							video["author"] = item["owner"]["name"].asString();
 							videos.insertLast(video);
@@ -322,7 +322,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	JsonReader reader;
 	JsonValue root;
 	int qn = 127;
-	string quality;
 	string cid = parse(path, "cid");
 	int p = parseInt(parse(path, "p", "1"));
 	bool ispgc = false;
@@ -337,7 +336,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			JsonValue data = root["data"];
 			aid = data["aid"].asInt();
 			if (!cid.empty()) {
-				for (uint i = 0; i < data["pages"].size(); i++) {
+				for (int i = 0; i < data["pages"].size(); i++) {
 					if (data["pages"][i]["cid"].asString() == cid) {
 						p = i + 1;
 						break;
@@ -384,7 +383,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				JsonValue subs;
 				subs = root["data"]["subtitle"]["subtitles"];
 				if (subs.isArray()) {
-					for (uint i = 0; i < subs.size(); i++) {
+					for (int i = 0; i < subs.size(); i++) {
 						JsonValue sub = subs[i];
 						dictionary dic;
 						dic["name"] = "【字幕】" + sub["lan_doc"].asString();
@@ -403,7 +402,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			JsonValue points = data["view_points"];
 			if (points.isArray()) {
 				array<dictionary> chapt;
-				for (uint i = 0; i < points.size(); i++) {
+				for (int i = 0; i < points.size(); i++) {
 					JsonValue point = points[i];
 					dictionary item;
 					item["title"] = point["content"].asString();
@@ -435,7 +434,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				JsonValue clip_info_list = data["clip_info_list"];
 				if (clip_info_list.isArray() && clip_info_list.size() > 0) {
 					array<dictionary> chapt;
-					for (uint i = 0; i < clip_info_list.size(); i++) {
+					for (int i = 0; i < clip_info_list.size(); i++) {
 						JsonValue chapter = clip_info_list[i];
 						if (chapter.isObject()) {
 							if (chapter["clipType"].asString() == "CLIP_TYPE_OP") {
@@ -466,7 +465,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 			if (data["dash"].isObject()) {
 				JsonValue videos = data["dash"]["video"];
 				if (enable_qualities && @QualityList !is null) {
-					for (uint i = 0; i < videos.size(); i++) {
+					for (int i = 0; i < videos.size(); i++) {
 						int quality = videos[i]["id"].asInt();
 						dictionary qualityitem;
 						int  codecid = videos[i]["codecid"].asInt();
@@ -492,7 +491,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				}
                 JsonValue audios = data["dash"]["audio"];
                 if (enable_qualities && @QualityList !is null) {
-					for (uint i = 0; i < audios.size(); i++) {
+					for (int i = 0; i < audios.size(); i++) {
 						string audioquality;
                         audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
 						dictionary audioqualityitem;
@@ -516,7 +515,6 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	log("AID", aid);
 	log("BVID", bvid);
 	log("CID", cid);
-	log("QUALITY", quality);
 	log("URL", url);
 	log("");
 
@@ -533,7 +531,7 @@ array<dictionary> watchlater() {
 			if (Root["code"].asInt() == 0) {
 				JsonValue data = Root["data"]["list"];
 				if (data.isArray()) {
-					for (uint i = 0; i < data.size(); i++) {
+					for (int i = 0; i < data.size(); i++) {
 						JsonValue item = data[i];
 						if (item.isObject()) {
 							dictionary video;
@@ -544,7 +542,7 @@ array<dictionary> watchlater() {
 								video["title"] = item["title"].asString() + " | " + item["page"]["part"].asString();
 							}
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?p=" + p + "&isfromlist=true";
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?p=" + p;
 							video["thumbnail"] = item["pic"].asString();
 							video["author"] = item["owner"]["name"].asString();
 							videos.insertLast(video);
@@ -569,7 +567,7 @@ array<dictionary> History() {
 			if (Root["code"].asInt() == 0) {
 				JsonValue data = Root["data"]["list"];
 				if (data.isArray()) {
-					for (uint i = 0; i < data.size(); i++) {
+					for (int i = 0; i < data.size(); i++) {
 						JsonValue item = data[i];
 						string type = item["history"]["business"].asString();
 						// archive live pgc
@@ -583,7 +581,7 @@ array<dictionary> History() {
 										continue;
 									}
 									video["title"] = "直播 | " + item["title"].asString();
-									video["url"] = item["uri"].asString() + "?isfromlist=true";
+									video["url"] = item["uri"].asString();
 								} else if (type == "archive") {
 									int p = item["history"]["page"].asInt();
 									if (p == 1) {
@@ -592,7 +590,7 @@ array<dictionary> History() {
 										video["title"] = item["title"].asString() + " | " + item["history"]["part"].asString();
 									}
 									video["duration"] = item["duration"].asInt() * 1000;
-									video["url"] = "https://www.bilibili.com/video/" + item["history"]["bvid"].asString() + "?p=" + p + "&isfromlist=true";
+									video["url"] = "https://www.bilibili.com/video/" + item["history"]["bvid"].asString() + "?p=" + p;
 								} else {
 									continue;
 								}
@@ -608,7 +606,7 @@ array<dictionary> History() {
 }
 
 string parse(string url, string key, string defaultValue="") {
-	string value = HostRegExpParse(url, "\?" + key + "=([^&]+)");
+	string value = HostRegExpParse(url, "\\?" + key + "=([^&]+)");
 	if (!value.empty()) {
 		return value;
 	}
@@ -671,13 +669,13 @@ array<dictionary> Channel(string path) {
 				if (Root["code"].asInt() == 0) {
 					JsonValue data = Root["data"]["archives"];
 					if (data.isArray()) {
-						for (uint i = 0; i < data.size(); i++) {
+						for (int i = 0; i < data.size(); i++) {
 							JsonValue item = data[i];
 							if (item.isObject()) {
 								dictionary video;
 								video["title"] = item["title"].asString();
 								video["duration"] = item["length"].asInt() * 1000;
-								video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+								video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 								video["thumbnail"] = item["pic"].asString();
 								videos.insertLast(video);
 							}
@@ -733,13 +731,13 @@ array<dictionary> spaceVideo(string path) {
 				if (Root["code"].asInt() == 0) {
 					JsonValue data = Root["data"]["list"]["vlist"];
 					if (data.isArray()) {
-						for (uint i = 0; i < data.size(); i++) {
+						for (int i = 0; i < data.size(); i++) {
 							JsonValue item = data[i];
 							if (item.isObject()) {
 								dictionary video;
 								video["title"] = item["title"].asString();
 								video["duration"] = parseTime(item["length"].asString());
-								video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+								video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 								video["thumbnail"] = item["pic"].asString();
 								video["author"] = item["author"].asString();
 								videos.insertLast(video);
@@ -780,13 +778,13 @@ array<dictionary> spaceAudio(string path) {
 				if (Root["code"].asInt() == 0) {
 					JsonValue data = Root["data"]["data"];
 					if (data.isArray()) {
-						for (uint i = 0; i < data.size(); i++) {
+						for (int i = 0; i < data.size(); i++) {
 							JsonValue item = data[i];
 							if (item.isObject()) {
 								dictionary audio;
 								audio["title"] = item["title"].asString();
 								audio["duration"] = item["duration"].asInt() * 1000;
-								audio["url"] = "https://www.bilibili.com/audio/au" + item["id"].asString() + "?isfromlist=true";
+								audio["url"] = "https://www.bilibili.com/audio/au" + item["id"].asString();
 								audio["thumbnail"] = item["cover"].asString();
 								audios.insertLast(audio);
 							}
@@ -870,13 +868,13 @@ array<dictionary> FavList(string path) {
 			if (Root["code"].asInt() == 0) {
 				JsonValue data = Root["data"]["medias"];
 				if (data.isArray()) {
-					for (uint i = 0; i < data.size(); i++) {
+					for (int i = 0; i < data.size(); i++) {
 						JsonValue item = data[i];
 						if (item.isObject()) {
 							dictionary video;
 							video["title"] = item["title"].asString();
 							video["duration"] = item["duration"].asInt() * 1000;
-							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+							video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 							video["thumbnail"] = item["cover"].asString();
 							video["author"] = item["upper"]["name"].asString();
 							videos.insertLast(video);
@@ -909,7 +907,7 @@ array<dictionary> followingLive(uint page) {
 		if (Root["code"].asInt() == 0) {
 			JsonValue list = Root["data"]["list"];
 			if (list.isArray()) {
-				for (uint i = 0; i < list.size(); i++) {
+				for (int i = 0; i < list.size(); i++) {
 					JsonValue item = list[i];
 					// 未开播
 					if (item["live_status"].asInt() == 0) {
@@ -917,12 +915,12 @@ array<dictionary> followingLive(uint page) {
 					}
 					dictionary video;
 					video["title"] = item["title"].asString();
-					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt() + "?isfromlist=true";
+					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
 					video["thumbnail"] = item["face"].asString();
 					video["author"] = item["uname"].asString();
 					videos.insertLast(video);
 				}
-				if (page < Root["data"]["totalPage"].asInt()) {
+				if (page < Root["data"]["totalPage"].asUInt()) {
 					array<dictionary> videos2 = followingLive(page+1);
 					for (uint i = 0; i < videos2.size(); i++) {
 						videos.insertLast(videos2[i]);
@@ -948,12 +946,12 @@ array<dictionary> PopularHistory() {
 		}
 		JsonValue list = Root["data"]["list"];
 		if (list.isArray()) {
-			for (uint i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				dictionary video;
 				video["title"] = item["title"].asString();
 				video["duration"] = item["duration"].asInt() * 1000;
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 				video["thumbnail"] = item["pic"].asString();
 				video["author"] = item["owner"]["name"].asString();
 				videos.insertLast(video);
@@ -993,12 +991,12 @@ array<dictionary> PopularWeekly(string path) {
 		}
 		JsonValue list = Root["data"]["list"];
 		if (list.isArray()) {
-			for (uint i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				dictionary video;
 				video["title"] = item["title"].asString();
 				video["duration"] = item["duration"].asInt() * 1000;
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 				video["thumbnail"] = item["pic"].asString();
 				video["author"] = item["owner"]["name"].asString();
 				videos.insertLast(video);
@@ -1038,12 +1036,12 @@ array<dictionary> Ranking(string path) {
 		}
 		JsonValue list = Root["data"]["list"];
 		if (list.isArray()) {
-			for (uint i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				dictionary video;
 				video["title"] = item["title"].asString();
 				video["duration"] = item["duration"].asInt() * 1000;
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 				video["thumbnail"] = item["pic"].asString();
 				video["author"] = item["owner"]["name"].asString();
 				videos.insertLast(video);
@@ -1067,12 +1065,12 @@ array<dictionary> Dynamic(uint tid) {
 		}
 		JsonValue list = Root["data"]["archives"];
 		if (list.isArray()) {
-			for (uint i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				dictionary video;
 				video["title"] = item["title"].asString();
 				video["duration"] = item["duration"].asInt() * 1000;
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 				video["thumbnail"] = item["pic"].asString();
 				video["author"] = item["owner"]["name"].asString();
 				videos.insertLast(video);
@@ -1118,7 +1116,7 @@ array<dictionary> Banggumi(string id, string type) {
 		}
 		JsonValue episodes = Root["result"]["episodes"];
 		if (episodes.isArray()) {
-			for (uint i = 0; i < episodes.size(); i++) {
+			for (int i = 0; i < episodes.size(); i++) {
 				JsonValue item = episodes[i];
 				dictionary video;
 				if (item["badge"].asString().empty()) {
@@ -1127,7 +1125,7 @@ array<dictionary> Banggumi(string id, string type) {
 					video["title"] = "【" + item["badge"].asString() + "】" + item["share_copy"].asString();
 				}
 				video["duration"] = item["duration"].asInt();
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true&cid=" + item["cid"].asString();
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?cid=" + item["cid"].asString();
 				video["thumbnail"] = item["cover"].asString();
 				videos.insertLast(video);
 			}
@@ -1156,12 +1154,12 @@ array<dictionary> AudioList(string path) {
 		}
 		JsonValue data = Root["data"]["data"];
 		if (data.isArray()) {
-			for (uint i = 0; i < data.size(); i++) {
+			for (int i = 0; i < data.size(); i++) {
 				JsonValue item = data[i];
 				dictionary audio;
 				audio["title"] = item["title"].asString();
 				audio["duration"] = item["duration"].asInt() * 1000;
-				audio["url"] = "https://www.bilibili.com/audio/au" + item["statistic"]["sid"].asInt() + "?isfromlist=true";
+				audio["url"] = "https://www.bilibili.com/audio/au" + item["statistic"]["sid"].asInt();
 				audio["thumbnail"] = item["cover"].asString();
 				if (item["author"].isString()) {
 					audio["author"] = item["author"].asString();
@@ -1206,7 +1204,7 @@ array<dictionary> Search(string path) {
 		}
 		JsonValue list;
 		if (type == "all") {
-			for (uint i = 0; i < Root["data"]["result"].size(); i++) {
+			for (int i = 0; i < Root["data"]["result"].size(); i++) {
 				if (Root["data"]["result"][i]["result_type"].asString() == "video") {
 					list = Root["data"]["result"][i]["data"];
 					break;
@@ -1217,7 +1215,7 @@ array<dictionary> Search(string path) {
 		} else {
 			return videos;
 		}
-		for (uint i = 0; i < list.size(); i++) {
+		for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				dictionary video;
 				string title = item["title"].asString();
@@ -1226,7 +1224,7 @@ array<dictionary> Search(string path) {
 				video["title"] = title;
 				video["content"] = title;
 				video["duration"] = parseTime(item["duration"].asString());
-				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString() + "?isfromlist=true";
+				video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 				video["thumbnail"] = "https:" + item["pic"].asString();
 				video["author"] = item["author"].asString();
 				videos.insertLast(video);
@@ -1262,7 +1260,7 @@ array<dictionary> webDynamic(string path) {
 			JsonValue list = Root["data"]["items"];
 			if (list.isArray()) {
 				offset = Root["data"]["offset"].asString();
-				for (uint j = 0; j < list.size(); j++) {
+				for (int j = 0; j < list.size(); j++) {
 					JsonValue dynamic = list[j]["modules"]["module_dynamic"];
 					if (dynamic.isObject()) {
 						JsonValue major = dynamic["major"];
@@ -1277,7 +1275,7 @@ array<dictionary> webDynamic(string path) {
 								dictionary video;
 								video["title"] = "视频 | " + archive["title"].asString();
 								video["duration"] = parseTime(archive["duration_text"].asString());
-								video["url"] = "https://www.bilibili.com/video/" + bvid + "?isfromlist=true";
+								video["url"] = "https://www.bilibili.com/video/" + bvid;
 								video["thumbnail"] = archive["cover"].asString();
 								video["author"] = author;
 								videos.insertLast(video);
@@ -1292,7 +1290,7 @@ array<dictionary> webDynamic(string path) {
 								if (content["live_play_info"]["live_status"].asInt() == 1) {
 									dictionary live;
 									live["title"] = "直播 | " + content["live_play_info"]["title"].asString();
-									live["url"] = "https://live.bilibili.com/" + content["live_play_info"]["room_id"].asString() + "?isfromlist=true";
+									live["url"] = "https://live.bilibili.com/" + content["live_play_info"]["room_id"].asString();
 									live["thumbnail"] = content["live_play_info"]["cover"].asString();
 									live["author"] = author;
 									videos.insertLast(live);
@@ -1327,7 +1325,7 @@ array<dictionary> Recommend(uint page) {
 		}
 		JsonValue list = Root["data"]["item"];
 		if (list.isArray()) {
-			for (uint i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size(); i++) {
 				JsonValue item = list[i];
 				if (item["bvid"].asString().empty()) {
 					continue;
@@ -1337,11 +1335,11 @@ array<dictionary> Recommend(uint page) {
 				video["author"] = item["owner"]["name"].asString();
 				if (item["uri"].asString().find("live.bilibili.com") >= 0) {
 					video["title"] = "直播 | " + item["title"].asString();
-					video["url"] = item["uri"].asString() + "?isfromlist=true";
+					video["url"] = item["uri"].asString();
 				} else {
 					video["title"] = item["title"].asString();
 					video["duration"] = item["duration"].asInt() * 1000;
-					video["url"] = item["uri"].asString() + "?isfromlist=true";
+					video["url"] = item["uri"].asString();
 				}
 				videos.insertLast(video);
 			}
@@ -1421,21 +1419,21 @@ string Audio(const string &in path, dictionary &MetaData, array<dictionary> &Qua
 	JsonValue Root;
 	string url;
 	string res;
-	if (parse(path, "isfromlist") != "true") {
-		res = post("https://www.bilibili.com/audio/music-service-c/web/song/info?sid=" + id);
-		res = HostDecompress(res);
-		if (Reader.parse(res, Root) && Root.isObject()) {
-			if (Root["code"].asInt() != 0) {
-				return "";
-			}
-			JsonValue data = Root["data"];
-			MetaData["title"] = data["title"].asString();
-			MetaData["thumbnail"] = data["cover"].asString();
-			if (data["author"].isString()) {
-				MetaData["author"] = data["author"].asString();
-			}
+
+	res = post("https://www.bilibili.com/audio/music-service-c/web/song/info?sid=" + id);
+	res = HostDecompress(res);
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() != 0) {
+			return "";
+		}
+		JsonValue data = Root["data"];
+		MetaData["title"] = data["title"].asString();
+		MetaData["thumbnail"] = data["cover"].asString();
+		if (data["author"].isString()) {
+			MetaData["author"] = data["author"].asString();
 		}
 	}
+
 	status = 3;
 	res = post("https://www.bilibili.com/audio/music-service-c/web/url?privilege=2&quality=2&sid=" + id);
 	res = HostDecompress(res);
@@ -1464,9 +1462,8 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		}
 		JsonValue data = Root["data"]["room_info"];
 		string author = Root["data"]["anchor_info"]["base_info"]["uname"].asString();
-		if (parse(path, "isfromlist") != "true") {
-			MetaData["title"] = author + " - " +  data["title"].asString();
-		}
+		MetaData["title"] = data["title"].asString();
+
 		string desc = data["description"].asString();
 		if (desc.empty()) {
 			desc = data["title"].asString();
@@ -1489,7 +1486,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 			url = data[0]["url"].asString();
 			JsonValue qualities = Root["data"]["quality_description"];
 			if (enable_qualities && @QualityList !is null) {
-				for (uint i = 0; i < qualities.size(); i++) {
+				for (int i = 0; i < qualities.size(); i++) {
 					int quality = qualities[i]["qn"].asInt();
 					dictionary qualityitem;
 					dictionary qualityitem2;
@@ -1538,7 +1535,7 @@ bool PlayitemCheck(const string &in path) {
 		return false;
 	}
 
-	if (path.find("/video/BV") >= 0 && path.find("isfromlist") >= 0) {
+	if (path.find("/video/BV") >= 0) {
 		return true;
 	}
 
@@ -1555,9 +1552,6 @@ bool PlayitemCheck(const string &in path) {
 bool PlaylistCheck(const string &in path) {
 	status = 0;
 	if (path.find("bilibili.com") < 0) {
-		return false;
-	}
-	if (path.find("isfromlist") >= 0) {
 		return false;
 	}
 	if (!parseBVId(path).empty() || !parseAVId(path).empty()) {
@@ -1712,7 +1706,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 string PlayitemParse(const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	log("Playitem path", path);
 	status = 2;
-	if (path.find("/video/BV") >= 0  && path.find("isfromlist") >= 0) {
+	if (path.find("/video/BV") >= 0) {
 		string bvid = parseBVId(path);
 		return Video(bvid, path, MetaData, QualityList);
 	}

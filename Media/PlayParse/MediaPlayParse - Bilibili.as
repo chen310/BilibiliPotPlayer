@@ -468,10 +468,10 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					for (int i = 0; i < videos.size(); i++) {
 						int quality = videos[i]["id"].asInt();
 						dictionary qualityitem;
-						int  codecid = videos[i]["codecid"].asInt();
+						int codecid = videos[i]["codecid"].asInt();
 						url = videos[i]["baseUrl"].asString();
 						qualityitem["url"] = url;
-						int itag = videos[i]["id"].asInt() *10 +codecid;
+						int itag = videos[i]["id"].asInt() * 10 + codecid;
 						int trueitag = getTrueItag(itag);
 						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid) ;
 						qualityitem["qualityDetail"] = qualityitem["quality"];
@@ -504,6 +504,8 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						QualityList.insertLast(audioqualityitem);
 					}
 				}
+			} else if (data["durl"].isArray()) {
+				url = data["durl"][0]["url"].asString();
 			}
 		} else {
 			return url;

@@ -473,7 +473,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						qualityitem["url"] = url;
 						int itag = videos[i]["id"].asInt() * 10 + codecid;
 						int trueitag = getTrueItag(itag);
-						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid) ;
+						qualityitem["quality"] = getVideoquality(quality) + getCodec(codecid);
 						qualityitem["qualityDetail"] = qualityitem["quality"];
 						qualityitem["itag"] = trueitag;
 						QualityList.insertLast(qualityitem);
@@ -498,14 +498,70 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						int audioid = audios[i]["id"].asInt();
 						int audioitag = getAudioItag(audioid);
                         audioqualityitem["url"] = audios[i]["baseUrl"].asString();
-						audioqualityitem["quality"] =  "AAC " + audioquality ;
-						audioqualityitem["qualityDetail"] = audioqualityitem["quality"] ;
+						audioqualityitem["quality"] =  "AAC " + audioquality;
+						audioqualityitem["qualityDetail"] = audioqualityitem["quality"];
 						audioqualityitem["itag"] = audioitag;
 						QualityList.insertLast(audioqualityitem);
 					}
 				}
 			} else if (data["durl"].isArray()) {
 				url = data["durl"][0]["url"].asString();
+				qn = data["quality"].asInt();
+				dictionary qualityitem;
+				int codecid = data["video_codecid"].asInt();
+				JsonValue qualities = data["accept_quality"];
+				if (enable_qualities && @QualityList !is null) {
+					for (uint i = 0; i < qualities.size(); i++) {
+						int quality = qualities[i].asInt();
+						dictionary qualityitem;
+						int quality_codecid;
+						if (quality == qn) {
+							qualityitem["url"] = url;
+							quality_codecid = codecid;
+						} else {
+							string quality_res;
+							if (ispgc) {
+								quality_res = apiPost("/pgc/player/web/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + quality + "&fnval=4048&fourk=1");
+							} else {
+								quality_res = apiPost("/x/player/playurl?avid=" + aid + "&cid=" + cid + "&qn=" + quality + "&fnval=4048&fourk=1");
+							}
+							JsonValue temp;
+							if (reader.parse(quality_res, temp) && temp.isObject()) {
+								if (temp["code"].asInt() != 0) {
+									continue;
+								}
+								JsonValue quality_data;
+								if (ispgc) {
+									quality_data = temp["result"];
+								} else {
+									quality_data = temp["data"];
+								}
+								if (quality_data["durl"].isArray()) {
+									qualityitem["url"] = quality_data["durl"][0]["url"].asString();
+									quality_codecid = quality_data["video_codecid"].asInt();
+								}
+							}
+						}
+						int itag = quality * 10 + quality_codecid;
+						int trueitag = getTrueItag(itag);
+						qualityitem["quality"] = getVideoquality(quality) + getCodec(quality_codecid);
+						qualityitem["qualityDetail"] = qualityitem["quality"];
+						qualityitem["itag"] = trueitag;
+						QualityList.insertLast(qualityitem);
+					}
+					if (QualityList.length() == 1) {
+						dictionary qualityitem2;
+						if (data["durl"][0]["backup_url"].isArray() && data["durl"][0]["backup_url"].size() > 0) {
+							qualityitem2["url"] = data["durl"][0]["backup_url"][0].asString();
+						} else {
+							qualityitem2["url"] = url;
+						}
+						qualityitem2["quality"] = "- " + getVideoquality(qn) + getCodec(codecid) + " 备用";
+						qualityitem2["qualityDetail"] = qualityitem2["quality"];
+						qualityitem2["itag"] = 1;
+						QualityList.insertLast(qualityitem2);
+					}
+				}
 			}
 		} else {
 			return url;
@@ -1375,8 +1431,7 @@ int getVideoItag(int qn) {
 }
 
 int getTrueItag(int itag) {
-	array<int> itags = {1282,1283,1272,1273,1262,1263,1207,1212,1213,1167,1172,1173,1127,1132,1133,807,812,813,647,652,653,327,332,333,167,172,173,67,72,73
-};
+	array<int> itags = {1282,1283,1272,1273,1262,1263,1207,1212,1213,1167,1172,1173,1127,1132,1133,807,812,813,647,652,653,327,332,333,167,172,173,67,72,73};
 	array<int> tis = {102,571,101,702,266,701,138,272,401,299,303,699,264,271,400,137,248,399,136,247,398,135,244,397,134,243,396,133,242,395};
 	int idx = itags.find(itag);
 	if (idx >= 0) {

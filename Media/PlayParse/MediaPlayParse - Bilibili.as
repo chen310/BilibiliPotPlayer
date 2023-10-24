@@ -470,6 +470,9 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						dictionary qualityitem;
 						int codecid = videos[i]["codecid"].asInt();
 						url = videos[i]["baseUrl"].asString();
+						if(url.find("cn-hncs-gd-bcache-") >= 0){
+							url = videos[i]["backupUrl"][0].asString();
+						}
 						qualityitem["url"] = url;
 						int itag = videos[i]["id"].asInt() * 10 + codecid;
 						int trueitag = getTrueItag(itag);
@@ -497,7 +500,11 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						dictionary audioqualityitem;
 						int audioid = audios[i]["id"].asInt();
 						int audioitag = getAudioItag(audioid);
-                        audioqualityitem["url"] = audios[i]["baseUrl"].asString();
+						string audiourl = audios[i]["baseUrl"].asString();
+						if( audiourl.find("cn-hncs-gd-bcache-") >= 0){
+							audiourl = audios[i]["backupUrl"][0].asString();
+						}
+                        audioqualityitem["url"] = audiourl;
 						audioqualityitem["quality"] =  "AAC " + audioquality;
 						audioqualityitem["qualityDetail"] = audioqualityitem["quality"];
 						audioqualityitem["itag"] = audioitag;

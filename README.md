@@ -28,28 +28,7 @@
 
 ### Cookies 获取
 
-<small>参阅：<a href="https://github.com/XiaoMiku01/bili-live-heart/blob/master/doc_old/bili.md">B 站 Cookie 获取教程</a></small>
-
-- 打开你所用浏览器的**无痕模式**
-  **如果还是抓不到就把无痕模式关了再试试！**
-- 第二步：
-  - 在**无痕窗口**进入任意一个直播间
-  - 在直播间页面点击右上角登录自己的 B 站账号
-- 第三步：
-
-  - 点击键盘`F12`或者`鼠标右键`->检查，进入开发者工具
-  - 点击`网络`/`NetWork`选项卡
-
-  ![网络/Network](http://i0.hdslb.com/bfs/album/4717448339d26a412ba23215d3ce674c549adf4f.png)
-
-  - 进入该选项卡后，键盘`F5`或浏览器左上角刷新页面
-  - 在数据包中找到 **heartBeat** 或 **webHeartBeat**，点击找到请求头中的 **cookie** 项，并复制保留（图中浅蓝色部分）填写到插件账号设置的 Cookie 一栏中
-
-  ![cookie](http://i0.hdslb.com/bfs/album/01c052ec17757a34f6a256f03523efa89c3e4d56.jpg)
-
-PS:有了 cookie 能操作 B 站账号的大部分功能，切勿泄露或分享出去
-
-**如果后续出现报错,请关闭无痕模式抓 cookie**
+[获取Cookie](https://github.com/chen310/BilibiliPotPlayer/issues/62#issuecomment-1841909583)
 
 ## 使用方法
 

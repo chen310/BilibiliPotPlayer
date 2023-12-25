@@ -1,0 +1,22 @@
+{
+    // 填写账号 Cookie
+    "cookie": "",
+    "danmaku": {
+        // 控制是否接收弹幕。按 Alt+H 可显示/隐藏弹幕
+        "enable": true,
+        "server": "https://subtitle.chen310.repl.co",
+        // 字体
+        "font": "微软雅黑",
+        // 字号
+        "fontSize": 30.0,
+        // 弹幕不透明度，取值范围 0.0 ~ 1.0
+        "opacity": 0.8,
+        // 弹幕显示区域大小，取值范围 0.0 ~ 1.0
+        "displayArea": 0.8,
+        // 弹幕显示时间
+        "stayTime": 15.0
+    },
+    // 播放单个视频时是否显示推荐的视频
+    "showRecommendedVideos": true,
+    "debug": false
+}

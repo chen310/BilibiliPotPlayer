@@ -22,26 +22,12 @@
 // bool PlaylistCheck(const string &in)					-> check playlist
 // array<dictionary> PlaylistParse(const string &in)	-> parse playlist
 
-
-bool debug = false;
-string cookie = "";
-int uid = 0;
-bool enable_subtitle = true;
-string subtitle_host = "https://subtitle.chen310.repl.co";
-string danmaku_url = subtitle_host +  "/subtitle?font=" + HostUrlEncode("微软雅黑") + "&font_size=30.0&alpha=0.8&is_reduce_comments=false&cid=";
-string subtitle_url = subtitle_host + "/subtitle?url=";
-// 是否可选择画质
-bool enable_qualities = true;
-// 视频推荐
-bool enable_related = true;
+Config ConfigData;
 
 void OnInitialize() {
 	HostSetUrlHeaderHTTP("bilivideo.com", "Referer: https://www.bilibili.com\r\n");
 	HostSetUrlHeaderHTTP("bilivideo.cn", "Referer: https://www.bilibili.com\r\n");
 	HostSetUrlHeaderHTTP("bilibili.com", "Referer: https://www.bilibili.com\r\n");
-	if (debug) {
-		HostOpenConsole();
-	}
 }
 
 string host = "https://api.bilibili.com";
@@ -61,27 +47,33 @@ string GetDesc() {
 
 string GetLoginTitle()
 {
-	return "请输入Bilibili Cookie";
+	return "请输入配置文件所在位置";
 }
 
 string GetLoginDesc()
 {
-	return "请输入Bilibili Cookie";
+	return "请输入配置文件所在位置";
 }
 
 string GetUserText()
 {
-	return "这里放空";
+	return "配置文件路径";
 }
 
 string GetPasswordText()
 {
-	return "Cookie:";
+	return "";
 }
 
 string ServerCheck(string User, string Pass) {
-	if (Pass.empty()) {
-		return "请输入Cookie";
+	if (User.empty()) {
+		return "未填写配置文件路径";
+	}
+	if (!isFileExists(User)) {
+		return "配置文件不存在";
+	}
+	if (ConfigData.cookie.empty()) {
+		return "未填写cookie";
 	}
 	string info = "";
 	JsonReader reader;
@@ -104,12 +96,94 @@ string ServerCheck(string User, string Pass) {
 
 string ServerLogin(string User, string Pass)
 {
-	if (Pass.empty()) return "cookie 为空";
-	handleCookie(Pass);
-	if (cookie.empty()) {
-		return "您输入的 cookie 不可用";
+	if (User.empty()) {
+		return "路径不可为空";
 	}
-	return "cookie 设置成功";
+	if (!isFileExists(User)) {
+		return "配置文件不存在";
+	}
+	ConfigData = ReadConfigFile(User);
+	if (ConfigData.debug) {
+		HostOpenConsole();
+	}
+
+	return "配置文件读取成功，修改完配置文件后需要重启 PotPlayer 才能生效";
+}
+
+bool isFileExists(string path) {
+	return HostFileOpen(path) > 0;
+}
+
+class Config {
+	string fullConfig;
+	string cookie;
+	int uid = 0;
+	bool danmakuEnable = true;
+	string danmakuServer;
+	string danmakuFont;
+	float danmakuFontSize = 30.0;
+	float danmakuOpacity = 0.8;
+	float danmakuDisplayArea = 0.8;
+	float danmakuStayTime = 15.0;
+	bool showRecommendedVideos = true;
+	bool debug = false;
+
+	string danmakuUrl;
+	string subtitleUrl;
+};
+
+Config ReadConfigFile(string file) {
+	Config config;
+	config.fullConfig = HostFileRead(HostFileOpen(file), 10000);
+	JsonReader reader;
+	JsonValue root;
+	if (reader.parse(config.fullConfig, root) && root.isObject()) {
+		if (root["cookie"].isString() && !root["cookie"].asString().empty()) {
+			config.cookie = root["cookie"].asString();
+			array<string> cookies = config.cookie.split(";");
+			for (uint i=0; i < cookies.length(); i++) {
+				if (cookies[i].find("DedeUserID=") >= 0) {
+					ConfigData.uid = parseInt(cookies[i].split("=")[1]);
+					break;
+				}
+			}
+		}
+		if (root["danmaku"].isObject()) {
+			JsonValue danmaku = root["danmaku"];
+			if (danmaku["enable"].isBool()) {
+				config.danmakuEnable = danmaku["enable"].asBool();
+			}
+			if (danmaku["server"].isString() && !danmaku["server"].asString().empty()) {
+				config.danmakuServer = danmaku["server"].asString();
+			}
+			if (danmaku["font"].isString()) {
+				config.danmakuFont = danmaku["font"].asString();
+			}
+			if (danmaku["fontSize"].isNumeric()) {
+				config.danmakuFontSize = danmaku["fontSize"].asFloat();
+			}
+			if (danmaku["opacity"].isNumeric()) {
+				config.danmakuOpacity = danmaku["opacity"].asFloat();
+			}
+			if (danmaku["displayArea"].isNumeric()) {
+				config.danmakuDisplayArea = danmaku["displayArea"].asFloat();
+			}
+			if (danmaku["stayTime"].isNumeric()) {
+				config.danmakuStayTime = danmaku["stayTime"].asFloat();
+			}
+		}
+		if (root["showRecommendedVideos"].isBool()) {
+			config.showRecommendedVideos = root["showRecommendedVideos"].asBool();
+		}
+		if (root["debug"].isBool()) {
+			config.debug = root["debug"].asBool();
+		}
+		if (!config.danmakuServer.empty()) {
+			config.danmakuUrl = config.danmakuServer +  "/subtitle?font=" + HostUrlEncode(config.danmakuFont) + "&font_size=" + config.danmakuFontSize + "&alpha=" + config.danmakuOpacity + "&display_area=" + config.danmakuDisplayArea + "&duration_marquee=" + config.danmakuStayTime + "&duration_still=" + config.danmakuStayTime + "&cid=";
+			config.subtitleUrl = config.danmakuServer + "/subtitle?url=";
+		}
+	}
+	return config;
 }
 
 uint status = 0;
@@ -135,22 +209,8 @@ string GetStatus()
 	return info;
 }
 
-void handleCookie(string full_cookie) {
-	array<string> cookies = full_cookie.split(";");
-	for (uint i=0; i < cookies.length(); i++) {
-		int pos = cookies[i].find("SESSDATA");
-		if (pos >= 0) {
-			// cookie = cookies[i].substr(pos);
-			cookie = full_cookie;
-		}
-		if (cookies[i].find("DedeUserID=") >= 0) {
-			uid = parseInt(cookies[i].split("=")[1]);
-		}
-	}
-}
-
 void log(string item) {
-	if (!debug) {
+	if (!ConfigData.debug) {
 		return;
 	}
 	HostPrintUTF8(item);
@@ -167,8 +227,8 @@ void log(string item, int info) {
 string post(string url, string data="") {
 	string UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36";
 	string Headers = "Referer: https://www.bilibili.com\r\n";
-	if (!cookie.empty()) {
-		Headers += "Cookie: " + cookie + "\r\n";
+	if (!ConfigData.cookie.empty()) {
+		Headers += "Cookie: " + ConfigData.cookie + "\r\n";
 	}
 	log("request", url);
 	return HostUrlGetStringWithAPI(url, UserAgent, Headers, data, true);
@@ -270,7 +330,7 @@ array<dictionary> VideoPages(string id) {
 			}
 		}
 	}
-	if (videos.length() >= 2 || !enable_related) {
+	if (videos.length() >= 2 || !ConfigData.showRecommendedVideos) {
 		return videos;
 	}
 	res = apiPost("/x/web-interface/archive/related?bvid=" + bvid);
@@ -361,10 +421,10 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				ispgc = true;
 			}
 			MetaData["webUrl"] = makeWebUrl(webUrl);
-			if (enable_subtitle) {
+			if (ConfigData.danmakuEnable) {
 				dictionary dic;
 				dic["name"] = "【弹幕】" + title;
-				dic["url"] = danmaku_url + cid;
+				dic["url"] = ConfigData.danmakuUrl + cid;
 				subtitle.insertLast(dic);
 			}
 		} else {
@@ -379,7 +439,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	if (reader.parse(res, root) && root.isObject()) {
 		if (root["code"].asInt() == 0) {
 			JsonValue data = root["data"];
-			if (enable_subtitle) {
+			if (ConfigData.danmakuEnable) {
 				JsonValue subs;
 				subs = root["data"]["subtitle"]["subtitles"];
 				if (subs.isArray()) {
@@ -388,9 +448,9 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						dictionary dic;
 						dic["name"] = "【字幕】" + sub["lan_doc"].asString();
 						if (sub["subtitle_url"].asString().find("http") == 0) {
-							dic["url"] = subtitle_url + sub["subtitle_url"].asString();
+							dic["url"] = ConfigData.subtitleUrl + sub["subtitle_url"].asString();
 						} else {
-							dic["url"] = subtitle_url + "http:" + sub["subtitle_url"].asString();
+							dic["url"] = ConfigData.subtitleUrl + "http:" + sub["subtitle_url"].asString();
 						}
 						subtitle.insertLast(dic);
 					}
@@ -464,7 +524,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 
 			if (data["dash"].isObject()) {
 				JsonValue videos = data["dash"]["video"];
-				if (enable_qualities && @QualityList !is null) {
+				if (@QualityList !is null) {
 					for (int i = 0; i < videos.size(); i++) {
 						int quality = videos[i]["id"].asInt();
 						dictionary qualityitem;
@@ -490,7 +550,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					QualityList.insertLast(flacqualityitem);
 				}
                 JsonValue audios = data["dash"]["audio"];
-                if (enable_qualities && @QualityList !is null) {
+                if (@QualityList !is null) {
 					for (int i = 0; i < audios.size(); i++) {
 						string audioquality;
                         audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
@@ -510,7 +570,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 				dictionary qualityitem;
 				int codecid = data["video_codecid"].asInt();
 				JsonValue qualities = data["accept_quality"];
-				if (enable_qualities && @QualityList !is null) {
+				if (@QualityList !is null) {
 					for (uint i = 0; i < qualities.size(); i++) {
 						int quality = qualities[i].asInt();
 						dictionary qualityitem;
@@ -568,13 +628,12 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		}
 	}
 	if (!title.empty()) {
-		log("标题", title);
+		log("title", title);
 	}
-	log("AID", aid);
-	log("BVID", bvid);
-	log("CID", cid);
-	log("URL", url);
-	log("");
+	log("aid", aid);
+	log("bvid", bvid);
+	log("cid", cid);
+	log("url", url);
 
 	return url;
 }
@@ -881,7 +940,7 @@ array<dictionary> FavList(string path) {
 	if (fid.empty()) {
 		string mid = HostRegExpParse(path, "bilibili.com/([0-9]+)");
 		if (mid.empty()) {
-			mid = "" + uid;
+			mid = "" + ConfigData.uid;
 		}
 		string res = apiPost("/x/v3/fav/folder/created/list-all?up_mid=" + mid);
 		if (res.empty()) {
@@ -1542,7 +1601,7 @@ string Live(string id, const string &in path, dictionary &MetaData, array<dictio
 		if (data.isArray()) {
 			url = data[0]["url"].asString();
 			JsonValue qualities = Root["data"]["quality_description"];
-			if (enable_qualities && @QualityList !is null) {
+			if (@QualityList !is null) {
 				for (int i = 0; i < qualities.size(); i++) {
 					int quality = qualities[i]["qn"].asInt();
 					dictionary qualityitem;

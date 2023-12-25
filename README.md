@@ -6,7 +6,7 @@
 
 [下载项目](https://github.com/chen310/BilibiliPotPlayer/archive/refs/heads/master.zip)
 
-将项目 `Media/PlayParse` 路径下的 `MediaPlayParse - Bilibili.as` 和 `MediaPlayParse - Bilibili.ico` 两个文件复制到 `{PotPlayer 安装路径}\Extension\Media\PlayParse` 文件夹下。
+将项目 `Media/PlayParse` 路径下的 `MediaPlayParse - Bilibili.as`、`MediaPlayParse - Bilibili.ico` 和 `Bilibili_Config.json` 三个文件复制到 `{PotPlayer 安装路径}\Extension\Media\PlayParse` 文件夹下。
 
 `MediaPlayParse - Bilibili.as` 提供了解析 `Bilibili` 链接的功能。
 
@@ -18,7 +18,7 @@
 
 ## 登录
 
-打开 PotPlayer，按 <kbd>F5</kbd> 打开选项，点击`扩展功能`下的`媒体播放列表/项目`，再点击 `Bilibili`，然后打开`账户设置`，在 `Cookie` 一栏粘贴你的 Bilibili Cookie。
+找到刚刚复制过去的配置文件 `Bilibili_Config.json`，填写 Cookie 等设置内容。 打开 PotPlayer，按 <kbd>F5</kbd> 打开选项，点击`扩展功能`下的`媒体播放列表/项目`，再点击 `Bilibili`，然后打开`账户设置`，填写配置文件路径，如 `D:\DAUM\PotPlayer\Extension\Media\PlayParse\Bilibili_Config.json`。每次修改完配置文件，可能都要重启 PotPlayer 才能生效。
 
 ![Login](https://cdn.jsdelivr.net/gh/chen310/BilibiliPotPlayer/public/login.png)
 

@@ -824,7 +824,8 @@ array<dictionary> Channel(string path) {
 array<dictionary> spaceVideo(string path) {
 	array<dictionary> videos;
 	int ps = 50;
-	int pn = 1;
+	int page = parseInt(parse(path, "pn", "1"));
+	int pn = page;
 	string baseurl = "/x/space/wbi/arc/search?";
 	string params1;
 	string params2;
@@ -835,6 +836,9 @@ array<dictionary> spaceVideo(string path) {
 	params2 += "&ps=" + ps;
 	params2 += "&tid=" + parse(path, "tid", "0");
 	while (true) {
+		if (pn - page >= 10) {
+			break;
+		}
 		string params = params1 + "&pn=" + pn + params2;
 		string w_rid = encWbi(params);
 		params += "&w_rid=" + w_rid;

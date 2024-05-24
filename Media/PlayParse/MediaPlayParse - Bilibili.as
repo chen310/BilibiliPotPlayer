@@ -539,6 +539,16 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						QualityList.insertLast(qualityitem);
 					}
 				}
+				if (data["dash"]["dolby"]["audio"].isArray()){
+					string dolbyquality;
+					dolbyquality = formatFloat(data["dash"]["dolby"]["audio"][0]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
+					dictionary dolbyqualityitem;
+					dolbyqualityitem["url"] = data["dash"]["dolby"]["audio"][0]["baseUrl"].asString();
+					dolbyqualityitem["quality"] = "EC-3 " + dolbyquality;
+					dolbyqualityitem["qualityDetail"] = dolbyqualityitem["quality"];
+					dolbyqualityitem["itag"] = 328;
+					QualityList.insertLast(dolbyqualityitem);
+				}
 				if (data["dash"]["flac"].isObject()){
 					string flacquality;
 					flacquality = formatFloat(data["dash"]["flac"]["audio"]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";

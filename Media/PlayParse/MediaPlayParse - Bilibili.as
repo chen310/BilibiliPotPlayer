@@ -376,7 +376,7 @@ string makeWebUrl(string path) {
 string Video(string bvid, const string &in path, dictionary &MetaData, array<dictionary> &QualityList) {
 	log("--------------------------------------------------");
 	string res;
-	int aid;
+	string aid;
 	string title;
 	string url;
 	JsonReader reader;
@@ -394,7 +394,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 	if (reader.parse(res, root) && root.isObject()) {
 		if (root["code"].asInt() == 0) {
 			JsonValue data = root["data"];
-			aid = data["aid"].asInt();
+			aid = data["aid"].asString();
 			if (!cid.empty()) {
 				for (int i = 0; i < data["pages"].size(); i++) {
 					if (data["pages"][i]["cid"].asString() == cid) {

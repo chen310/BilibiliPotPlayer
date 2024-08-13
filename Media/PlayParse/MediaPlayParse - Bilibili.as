@@ -1092,7 +1092,7 @@ array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
 					video["author"] = item["uname"].asString();
 					videos.insertLast(video);
 				}
-				if (page < 2) {
+				if ((page - 1) * list.size() < 200) {
 					array<dictionary> videos2 = liveCategory(page+1,cateid,parentAreaId);
 					for (uint i = 0; i < videos2.size(); i++) {
 						videos.insertLast(videos2[i]);
@@ -1844,13 +1844,13 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if(path.find("live.bilibili.com") >= 0) {
 		if(path.find("areaId") >= 0){
-			return liveCategory(1,HostRegExpParse(path, "areaId=([0-9]+)"),"2");
+			return liveCategory(2,HostRegExpParse(path, "areaId=([0-9]+)"), HostRegExpParse(path, "parentAreaId=([0-9]+)"));
 		}
 		if(path.find("lol") >= 0){
-			return liveCategory(1,"86","2");
+			return liveCategory(2,"86","2");
 		}
 		if(path.find("hpjy") >= 0){
-			return liveCategory(1,"256","3");
+			return liveCategory(2,"256","3");
 		}
 	}
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {

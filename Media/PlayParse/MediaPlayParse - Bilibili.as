@@ -1063,6 +1063,40 @@ array<dictionary> followingLive(uint page) {
 	return videos;
 }
 
+array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
+	array<dictionary> videos;
+	JsonReader Reader;
+	JsonValue Root;
+	string url = "https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id="+parentAreaId+"&area_id="+cateid+"&page=" + page;
+	string res = post(url);
+	if (res.empty()) {
+		return videos;
+	}
+	if (Reader.parse(res, Root) && Root.isObject()) {
+		if (Root["code"].asInt() == 0) {
+			JsonValue list = Root["data"]["list"];
+			if (list.isArray()) {
+				for (int i = 0; i < list.size(); i++) {
+					JsonValue item = list[i];
+					dictionary video;
+					video["title"] = item["title"].asString();
+					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
+					video["thumbnail"] = item["face"].asString();
+					video["author"] = item["uname"].asString();
+					videos.insertLast(video);
+				}
+				if (page < 2) {
+					array<dictionary> videos2 = liveCategory(page+1,cateid,parentAreaId);
+					for (uint i = 0; i < videos2.size(); i++) {
+						videos.insertLast(videos2[i]);
+					}
+				}
+			}
+		}
+	}
+	return videos;
+}
+
 array<dictionary> PopularHistory() {
 	array<dictionary> videos;
 	JsonReader Reader;
@@ -1722,6 +1756,9 @@ bool PlaylistCheck(const string &in path) {
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return true;
 	}
+	if(path.find("live.bilibili.com") >= 0){
+		return true;
+	}
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
 		return true;
 	}
@@ -1797,6 +1834,17 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if (path.find("link.bilibili.com") >= 0 && path.find("/user-center/follow") >= 0) {
 		return followingLive(1);
+	}
+	if(path.find("live.bilibili.com") >= 0) {
+		if(path.find("areaId") >= 0){
+			return liveCategory(1,HostRegExpParse(path, "areaId=([0-9]+)"),"2");
+		}
+		if(path.find("lol") >= 0){
+			return liveCategory(1,"86","2");
+		}
+		if(path.find("hpjy") >= 0){
+			return liveCategory(1,"256","3");
+		}
 	}
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {
 		return Recommend(1);

@@ -980,7 +980,7 @@ array<dictionary> FavList(string path) {
 	string ftype = parse(path, "ftype");
 	// 订阅和收藏
 	if (ftype == "collect") {
-		baseurl = "/x/space/fav/season/list?season_id=" + fid + "&ps=" + ps;
+		baseurl = "/x/space/fav/season/list?season_id=" + fid;
 	} else {
 		baseurl = "/x/v3/fav/resource/list?media_id=" + fid + "&ps=" + ps;
 		baseurl += "&keyword=" + parse(path, "keyword");
@@ -989,7 +989,11 @@ array<dictionary> FavList(string path) {
 		baseurl += "&tid=" + parse(path, "tid", "0");
 	}
 	while (true) {
-		url = baseurl + "&pn=" + pn;
+		if (ftype == "collect") {
+			url = baseurl;
+		} else {
+			url = baseurl + "&pn=" + pn;
+		}
 		string res = apiPost(url);
 		if (res.empty()) {
 			return videos;
@@ -1011,6 +1015,9 @@ array<dictionary> FavList(string path) {
 							videos.insertLast(video);
 						}
 					}
+				}
+				if (ftype == "collect") {
+					return videos;
 				}
 				int count = Root["data"]["info"]["media_count"].asInt();
 				if (pn * ps >= count) {

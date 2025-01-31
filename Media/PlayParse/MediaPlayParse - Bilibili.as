@@ -432,7 +432,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 		}
 	}
 
-	res = apiPost("/x/player/v2?bvid=" + bvid + "&cid=" + cid);
+	res = apiPost("/x/player/wbi/v2?bvid=" + bvid + "&cid=" + cid);
 	if (res.empty()) {
 		return url;
 	}

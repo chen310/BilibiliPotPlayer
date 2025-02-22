@@ -1092,7 +1092,7 @@ array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
 					video["author"] = item["uname"].asString();
 					videos.insertLast(video);
 				}
-				if ((page - 1) * list.size() < 200) {
+				if ((page - 1) * list.size() < 200 && Root["has_more"].asBool()) {
 					array<dictionary> videos2 = liveCategory(page+1,cateid,parentAreaId);
 					for (uint i = 0; i < videos2.size(); i++) {
 						videos.insertLast(videos2[i]);

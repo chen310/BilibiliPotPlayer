@@ -1,6 +1,7 @@
 {
     // 填写账号 Cookie
     "cookie": "",
+    "maxliveroom": 200,
     "danmaku": {
         // 控制是否接收弹幕。按 Alt+H 可显示/隐藏弹幕
         "enable": true,

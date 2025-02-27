@@ -130,6 +130,8 @@ class Config {
 
 	string danmakuUrl;
 	string subtitleUrl;
+
+	int maxliveroom;
 };
 
 Config ReadConfigFile(string file) {
@@ -147,6 +149,9 @@ Config ReadConfigFile(string file) {
 					break;
 				}
 			}
+		}
+		if (root["maxliveroom"].isNumeric()) {
+			config.maxliveroom = root["maxliveroom"].asInt();
 		}
 		if (root["danmaku"].isObject()) {
 			JsonValue danmaku = root["danmaku"];
@@ -1070,38 +1075,47 @@ array<dictionary> followingLive(uint page) {
 	return videos;
 }
 
-array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
-	array<dictionary> videos;
-	JsonReader Reader;
-	JsonValue Root;
-	string url = "https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id="+parentAreaId+"&area_id="+cateid+"&page=" + page;
-	string res = post(url);
-	if (res.empty()) {
-		return videos;
-	}
-	if (Reader.parse(res, Root) && Root.isObject()) {
-		if (Root["code"].asInt() == 0) {
-			JsonValue list = Root["data"]["list"];
-			if (list.isArray()) {
-				for (int i = 0; i < list.size(); i++) {
-					JsonValue item = list[i];
-					dictionary video;
-					video["title"] = item["title"].asString();
-					video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
-					video["thumbnail"] = item["face"].asString();
-					video["author"] = item["uname"].asString();
-					videos.insertLast(video);
-				}
-				if ((page - 1) * list.size() < 200 && Root["has_more"].asBool()) {
-					array<dictionary> videos2 = liveCategory(page+1,cateid,parentAreaId);
-					for (uint i = 0; i < videos2.size(); i++) {
-						videos.insertLast(videos2[i]);
-					}
-				}
-			}
-		}
-	}
-	return videos;
+array<dictionary> liveCategory(uint page, string cateid, string parentAreaId) {
+    array<dictionary> videos;
+    JsonReader Reader;
+    JsonValue Root;
+    string url = "https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id=" + parentAreaId + "&area_id=" + cateid + "&page=" + page;
+    string res = post(url);
+    if (res.empty()) {
+        return videos;
+    }
+    if (Reader.parse(res, Root) && Root.isObject()) {
+        if (Root["code"].asInt() == 0) {
+            JsonValue list = Root["data"]["list"];
+            if (list.isArray()) {
+                for (int i = 0; i < list.size(); i++) {
+                    JsonValue item = list[i];
+                    dictionary video;
+                    video["title"] = item["title"].asString();
+                    video["url"] = "https://live.bilibili.com/" + item["roomid"].asInt();
+                    video["thumbnail"] = item["face"].asString();
+                    video["author"] = item["uname"].asString();
+                    videos.insertLast(video);
+                    if (videos.size() >= ConfigData.maxliveroom ) {
+                        return videos;
+                    }
+                }
+                if (Root["data"]["has_more"].asBool()) {
+                    array<dictionary> nextVideos = liveCategory(page + 1, cateid, parentAreaId);
+                    for (uint i = 0; i < nextVideos.size(); i++) {
+                        videos.insertLast(nextVideos[i]);
+                        if (videos.size() >= ConfigData.maxliveroom) {
+                            break;
+                        }
+                    }
+                    if (videos.size() >= ConfigData.maxliveroom ) {
+                        return videos;
+                    }
+                }
+            }
+        }
+    }
+    return videos;
 }
 
 array<dictionary> PopularHistory() {

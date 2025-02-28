@@ -130,6 +130,8 @@ class Config {
 
 	string danmakuUrl;
 	string subtitleUrl;
+
+	int maxliveroom;
 };
 
 Config ReadConfigFile(string file) {
@@ -147,6 +149,9 @@ Config ReadConfigFile(string file) {
 					break;
 				}
 			}
+		}
+		if (root["maxliveroom"].isNumeric()) {
+			config.maxliveroom = root["maxliveroom"].asInt();
 		}
 		if (root["danmaku"].isObject()) {
 			JsonValue danmaku = root["danmaku"];
@@ -559,15 +564,15 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					flacqualityitem["itag"] = 258;
 					QualityList.insertLast(flacqualityitem);
 				}
-                JsonValue audios = data["dash"]["audio"];
-                if (@QualityList !is null) {
+				JsonValue audios = data["dash"]["audio"];
+				if (@QualityList !is null) {
 					for (int i = 0; i < audios.size(); i++) {
 						string audioquality;
-                        audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
+						audioquality = formatFloat(audios[i]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
 						dictionary audioqualityitem;
 						int audioid = audios[i]["id"].asInt();
 						int audioitag = getAudioItag(audioid);
-                        audioqualityitem["url"] = audios[i]["baseUrl"].asString();
+						audioqualityitem["url"] = audios[i]["baseUrl"].asString();
 						audioqualityitem["quality"] =  "AAC " + audioquality;
 						audioqualityitem["qualityDetail"] = audioqualityitem["quality"];
 						audioqualityitem["itag"] = audioitag;
@@ -1070,11 +1075,11 @@ array<dictionary> followingLive(uint page) {
 	return videos;
 }
 
-array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
+array<dictionary> liveCategory(uint page, string cateid, string parentAreaId) {
 	array<dictionary> videos;
 	JsonReader Reader;
 	JsonValue Root;
-	string url = "https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id="+parentAreaId+"&area_id="+cateid+"&page=" + page;
+	string url = "https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id=" + parentAreaId + "&area_id=" + cateid + "&page=" + page;
 	string res = post(url);
 	if (res.empty()) {
 		return videos;
@@ -1091,14 +1096,23 @@ array<dictionary> liveCategory(uint page,string cateid,string parentAreaId) {
 					video["thumbnail"] = item["face"].asString();
 					video["author"] = item["uname"].asString();
 					videos.insertLast(video);
-				}
-				if ((page - 1) * list.size() < 200 && Root["has_more"].asBool()) {
-					array<dictionary> videos2 = liveCategory(page+1,cateid,parentAreaId);
-					for (uint i = 0; i < videos2.size(); i++) {
-						videos.insertLast(videos2[i]);
+					if (videos.size() >= ConfigData.maxliveroom ) {
+						return videos;
 					}
 				}
-			}
+				if (Root["data"]["has_more"].asBool()) {
+					array<dictionary> nextVideos = liveCategory(page + 1, cateid, parentAreaId);
+					for (uint i = 0; i < nextVideos.size(); i++) {
+						videos.insertLast(nextVideos[i]);
+						if (videos.size() >= ConfigData.maxliveroom) {
+							break;
+						}
+					}
+					if (videos.size() >= ConfigData.maxliveroom ) {
+						return videos;
+					}
+				}
+		}
 		}
 	}
 	return videos;

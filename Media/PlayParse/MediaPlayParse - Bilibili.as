@@ -131,7 +131,7 @@ class Config {
 	string danmakuUrl;
 	string subtitleUrl;
 
-	int maxliveroom;
+	int maxliveroom = 200;
 };
 
 Config ReadConfigFile(string file) {
@@ -1075,7 +1075,7 @@ array<dictionary> followingLive(uint page) {
 	return videos;
 }
 
-array<dictionary> liveCategory(uint page, string cateid, string parentAreaId) {
+array<dictionary> liveCategory(uint page, string cateid, string parentAreaId, uint liveRoomCount) {
 	array<dictionary> videos;
 	JsonReader Reader;
 	JsonValue Root;
@@ -1096,23 +1096,18 @@ array<dictionary> liveCategory(uint page, string cateid, string parentAreaId) {
 					video["thumbnail"] = item["face"].asString();
 					video["author"] = item["uname"].asString();
 					videos.insertLast(video);
-					if (videos.size() >= ConfigData.maxliveroom ) {
+					liveRoomCount += 1;
+					if (liveRoomCount >= ConfigData.maxliveroom ) {
 						return videos;
 					}
 				}
 				if (Root["data"]["has_more"].asBool()) {
-					array<dictionary> nextVideos = liveCategory(page + 1, cateid, parentAreaId);
+					array<dictionary> nextVideos = liveCategory(page + 1, cateid, parentAreaId, liveRoomCount);
 					for (uint i = 0; i < nextVideos.size(); i++) {
 						videos.insertLast(nextVideos[i]);
-						if (videos.size() >= ConfigData.maxliveroom) {
-							break;
-						}
-					}
-					if (videos.size() >= ConfigData.maxliveroom ) {
-						return videos;
 					}
 				}
-		}
+			}
 		}
 	}
 	return videos;
@@ -1858,13 +1853,13 @@ array<dictionary> PlaylistParse(const string &in path) {
 	}
 	if(path.find("live.bilibili.com") >= 0) {
 		if(path.find("areaId") >= 0){
-			return liveCategory(2,HostRegExpParse(path, "areaId=([0-9]+)"), HostRegExpParse(path, "parentAreaId=([0-9]+)"));
+			return liveCategory(1,HostRegExpParse(path, "areaId=([0-9]+)"), HostRegExpParse(path, "parentAreaId=([0-9]+)"), 0);
 		}
 		if(path.find("lol") >= 0){
-			return liveCategory(2,"86","2");
+			return liveCategory(1,"86","2", 0);
 		}
 		if(path.find("hpjy") >= 0){
-			return liveCategory(2,"256","3");
+			return liveCategory(1,"256","3", 0);
 		}
 	}
 	if (path.find("www.bilibili.com") >= 0 && HostRegExpParse(path, "www.bilibili.com/([a-zA-Z0-9]+)").empty()) {

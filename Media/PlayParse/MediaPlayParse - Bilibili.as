@@ -777,12 +777,16 @@ array<dictionary> Channel(string path) {
 	array<dictionary> videos;
 	int ps = 100;
 	int pn = 1;
-	string uid = HostRegExpParse(path, "/([0-9]+)");
-	string sid = parse(path, "sid");
+	string uid = HostRegExpParse(path, "/([0-9]+)/lists");
+	string sid = HostRegExpParse(path, "lists/([0-9]+)");
+	if (sid.empty()) {
+		return videos;
+	}
 	string baseurl;
-	bool isCollection = path.find("collectiondetail") >= 0;
+	string type = parse(path, "type", "season");
+	bool isCollection = type == "season";
 	if (isCollection) {
-		baseurl = "/x/polymer/space/seasons_archives_list?mid=" + uid + "&season_id=" + sid + "&sort_reverse=" + parse(path, "sort_reverse", "false") + "&page_size=" + ps;
+		baseurl = "/x/polymer/web-space/seasons_archives_list?mid=" + uid + "&season_id=" + sid + "&sort_reverse=" + parse(path, "sort_reverse", "false") + "&page_size=" + ps;
 	} else {
 		baseurl = "/x/series/archives?mid=" + uid + "&series_id=" + sid + "&sort=desc" + "&ps=" + ps;
 	}
@@ -806,7 +810,7 @@ array<dictionary> Channel(string path) {
 							if (item.isObject()) {
 								dictionary video;
 								video["title"] = item["title"].asString();
-								video["duration"] = item["length"].asInt() * 1000;
+								video["duration"] = item["duration"].asInt() * 1000;
 								video["url"] = "https://www.bilibili.com/video/" + item["bvid"].asString();
 								video["thumbnail"] = item["pic"].asString();
 								videos.insertLast(video);
@@ -1756,7 +1760,7 @@ bool PlaylistCheck(const string &in path) {
 		else if (path.find("/favlist") >= 0) {
 			return true;
 		}
-		else if (path.find("/channel/collectiondetail") >= 0 || path.find("/channel/seriesdetail") >= 0) {
+		else if (path.find("lists") >= 0) {
 			return true;
 		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {
@@ -1838,7 +1842,7 @@ array<dictionary> PlaylistParse(const string &in path) {
 		else if (path.find("/favlist") >= 0) {
 			return FavList(path);
 		}
-		else if (path.find("/channel/collectiondetail") >= 0 || path.find("/channel/seriesdetail") >= 0) {
+		else if (path.find("lists") >= 0) {
 			return Channel(path);
 		}
 		else if (HostRegExpParse(path, "/([0-9]+)/[a-zA-Z0-9]").empty()) {

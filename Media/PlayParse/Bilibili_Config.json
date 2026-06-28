@@ -19,5 +19,8 @@
 	},
 	// 播放单个视频时是否显示推荐的视频
 	"showRecommendedVideos": true,
+	// 首选视频 CDN 域名。填入后,视频/音频地址的 host 会被替换为它。
+	// 留空则使用 B 站默认返回的地址。
+	"cdnHost": "",
 	"debug": false
 }

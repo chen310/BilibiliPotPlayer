@@ -30,6 +30,13 @@
 
 [获取Cookie](https://github.com/chen310/BilibiliPotPlayer/issues/62#issuecomment-1841909583)
 
+### 指定视频 CDN
+
+如果默认加载视频较慢,可在 `Bilibili_Config.json`
+中填写 `cdnHost`,把视频/音频地址的 host 替换为指定的 CDN。留空则使用 B 站默认地址。
+
+替换 host 后可能无法播放;此时可清空 `cdnHost` 恢复默认。
+
 ## 使用方法
 
 ### 播放视频/直播

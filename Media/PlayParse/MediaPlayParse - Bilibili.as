@@ -127,6 +127,7 @@ class Config {
 	float danmakuStayTime = 15.0;
 	bool showRecommendedVideos = true;
 	bool debug = false;
+	string cdnHost;
 
 	string danmakuUrl;
 	string subtitleUrl;
@@ -183,6 +184,17 @@ Config ReadConfigFile(string file) {
 		if (root["debug"].isBool()) {
 			config.debug = root["debug"].asBool();
 		}
+		if (root["cdnHost"].isString()) {
+			string host = root["cdnHost"].asString();
+			int schemeEnd = host.find("://");
+			if (schemeEnd >= 0) {
+				host = host.substr(schemeEnd + 3);
+			}
+			while (host.length() > 0 && host.substr(host.length() - 1, 1) == "/") {
+				host = host.substr(0, host.length() - 1);
+			}
+			config.cdnHost = host;
+		}
 		if (!config.danmakuServer.empty()) {
 			config.danmakuUrl = config.danmakuServer +  "/subtitle?font=" + HostUrlEncode(config.danmakuFont) + "&font_size=" + config.danmakuFontSize + "&alpha=" + config.danmakuOpacity + "&display_area=" + config.danmakuDisplayArea + "&duration_marquee=" + config.danmakuStayTime + "&duration_still=" + config.danmakuStayTime + "&cid=";
 			config.subtitleUrl = config.danmakuServer + "/subtitle?url=";
@@ -227,6 +239,22 @@ void log(string item, string info) {
 
 void log(string item, int info) {
 	log(item + ": " + info);
+}
+
+string replaceCdnHost(string url) {
+	if (ConfigData.cdnHost.empty() || url.empty()) {
+		return url;
+	}
+	int p = url.find("://");
+	if (p < 0) {
+		return url;
+	}
+	int hostStart = p + 3;
+	int pathStart = url.find("/", hostStart);
+	if (pathStart < 0) {
+		return url;
+	}
+	return url.substr(0, hostStart) + ConfigData.cdnHost + url.substr(pathStart);
 }
 
 string post(string url, string data="") {
@@ -534,7 +562,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						int quality = videos[i]["id"].asInt();
 						dictionary qualityitem;
 						int codecid = videos[i]["codecid"].asInt();
-						url = videos[i]["baseUrl"].asString();
+						url = replaceCdnHost(videos[i]["baseUrl"].asString());
 						qualityitem["url"] = url;
 						int itag = videos[i]["id"].asInt() * 10 + codecid;
 						int trueitag = getTrueItag(itag);
@@ -548,7 +576,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					string dolbyquality;
 					dolbyquality = formatFloat(data["dash"]["dolby"]["audio"][0]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
 					dictionary dolbyqualityitem;
-					dolbyqualityitem["url"] = data["dash"]["dolby"]["audio"][0]["baseUrl"].asString();
+					dolbyqualityitem["url"] = replaceCdnHost(data["dash"]["dolby"]["audio"][0]["baseUrl"].asString());
 					dolbyqualityitem["quality"] = "EC-3 " + dolbyquality;
 					dolbyqualityitem["qualityDetail"] = dolbyqualityitem["quality"];
 					dolbyqualityitem["itag"] = 328;
@@ -558,7 +586,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					string flacquality;
 					flacquality = formatFloat(data["dash"]["flac"]["audio"]["bandwidth"].asInt() / 1000.0, "", 0, 1) + "K";
 					dictionary flacqualityitem;
-					flacqualityitem["url"] = data["dash"]["flac"]["audio"]["baseUrl"].asString();
+					flacqualityitem["url"] = replaceCdnHost(data["dash"]["flac"]["audio"]["baseUrl"].asString());
 					flacqualityitem["quality"] = "FLAC" +flacquality;
 					flacqualityitem["qualityDetail"] = flacqualityitem["quality"];
 					flacqualityitem["itag"] = 258;
@@ -572,7 +600,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 						dictionary audioqualityitem;
 						int audioid = audios[i]["id"].asInt();
 						int audioitag = getAudioItag(audioid);
-						audioqualityitem["url"] = audios[i]["baseUrl"].asString();
+						audioqualityitem["url"] = replaceCdnHost(audios[i]["baseUrl"].asString());
 						audioqualityitem["quality"] =  "AAC " + audioquality;
 						audioqualityitem["qualityDetail"] = audioqualityitem["quality"];
 						audioqualityitem["itag"] = audioitag;
@@ -580,7 +608,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					}
 				}
 			} else if (data["durl"].isArray()) {
-				url = data["durl"][0]["url"].asString();
+				url = replaceCdnHost(data["durl"][0]["url"].asString());
 				qn = data["quality"].asInt();
 				dictionary qualityitem;
 				int codecid = data["video_codecid"].asInt();
@@ -612,7 +640,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 									quality_data = temp["data"];
 								}
 								if (quality_data["durl"].isArray()) {
-									qualityitem["url"] = quality_data["durl"][0]["url"].asString();
+									qualityitem["url"] = replaceCdnHost(quality_data["durl"][0]["url"].asString());
 									quality_codecid = quality_data["video_codecid"].asInt();
 								}
 							}
@@ -627,7 +655,7 @@ string Video(string bvid, const string &in path, dictionary &MetaData, array<dic
 					if (QualityList.length() == 1) {
 						dictionary qualityitem2;
 						if (data["durl"][0]["backup_url"].isArray() && data["durl"][0]["backup_url"].size() > 0) {
-							qualityitem2["url"] = data["durl"][0]["backup_url"][0].asString();
+							qualityitem2["url"] = replaceCdnHost(data["durl"][0]["backup_url"][0].asString());
 						} else {
 							qualityitem2["url"] = url;
 						}
